@@ -1,0 +1,1668 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>NewsFlow AI — Information, Synthesized</title>
+<meta name="description" content="NewsFlow AI — a premium news reader with AI-generated briefings and synthesis." />
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  /* ============ DESIGN TOKENS ============ */
+  :root{
+    --surface:#f9f9f9;
+    --surface-dim:#dadada;
+    --surface-bright:#f9f9f9;
+    --surface-container-lowest:#ffffff;
+    --surface-container-low:#f3f3f3;
+    --surface-container:#eeeeee;
+    --surface-container-high:#e8e8e8;
+    --surface-container-highest:#e2e2e2;
+    --on-surface:#1a1c1c;
+    --on-surface-variant:#5b403d;
+    --inverse-surface:#2f3131;
+    --inverse-on-surface:#f1f1f1;
+    --outline:#906f6c;
+    --outline-variant:#e4beb9;
+    --surface-tint:#bb171c;
+    --primary:#b7131a;
+    --on-primary:#ffffff;
+    --primary-container:#db322f;
+    --on-primary-container:#fffbff;
+    --inverse-primary:#ffb4ac;
+    --secondary:#5d5f5f;
+    --on-secondary:#ffffff;
+    --secondary-container:#dfe0e0;
+    --on-secondary-container:#616363;
+    --tertiary:#5d5c5b;
+    --on-tertiary:#ffffff;
+    --tertiary-container:#767474;
+    --on-tertiary-container:#f7feff;
+    --error:#ba1a1a;
+    --on-error:#ffffff;
+    --error-container:#ffdad6;
+    --on-error-container:#93000a;
+    --primary-fixed:#ffdad6;
+    --primary-fixed-dim:#ffb4ac;
+    --on-primary-fixed:#410002;
+    --on-primary-fixed-variant:#93000d;
+    --secondary-fixed:#e2e2e2;
+    --secondary-fixed-dim:#c6c6c7;
+    --on-secondary-fixed:#1a1c1c;
+    --on-secondary-fixed-variant:#454747;
+    --background:#f9f9f9;
+    --on-background:#1a1c1c;
+    --surface-variant:#e2e2e2;
+
+    --radius-sm:.25rem;
+    --radius:.5rem;
+    --radius-md:.75rem;
+    --radius-lg:1rem;
+    --radius-xl:1.5rem;
+    --radius-full:9999px;
+
+    --space-base:8px;
+    --space-xs:4px;
+    --space-sm:12px;
+    --space-md:24px;
+    --space-lg:40px;
+    --space-xl:64px;
+    --space-gutter:16px;
+    --margin-mobile:20px;
+    --margin-desktop:120px;
+
+    --shadow-1:0px 4px 20px rgba(0,0,0,0.05);
+    --shadow-2:0px 12px 40px rgba(0,0,0,0.1);
+    --shadow-ai:0px 4px 24px rgba(183,19,26,0.08);
+  }
+
+  *,*::before,*::after{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:var(--background);
+    color:var(--on-background);
+    font-family:'Inter',system-ui,sans-serif;
+    -webkit-font-smoothing:antialiased;
+    min-height:100vh;
+  }
+  img{max-width:100%;display:block;}
+  button{font-family:inherit;}
+  a{color:inherit;}
+
+  ::selection{background:var(--primary-fixed);color:var(--on-primary-fixed);}
+
+  :focus-visible{
+    outline:2px solid var(--primary);
+    outline-offset:2px;
+    border-radius:var(--radius-sm);
+  }
+
+  /* ============ TYPE SCALE ============ */
+  .t-display-lg{font-family:'Inter';font-size:48px;font-weight:800;line-height:56px;letter-spacing:-0.02em;}
+  .t-headline-lg{font-family:'Inter';font-size:32px;font-weight:700;line-height:40px;letter-spacing:-0.01em;}
+  .t-headline-md{font-family:'Inter';font-size:24px;font-weight:600;line-height:32px;}
+  .t-body-lg{font-family:'Inter';font-size:18px;font-weight:400;line-height:28px;}
+  .t-body-md{font-family:'Inter';font-size:16px;font-weight:400;line-height:24px;}
+  .t-label-md{font-family:'Inter';font-size:14px;font-weight:600;line-height:20px;letter-spacing:0.02em;}
+  .t-caption{font-family:'Inter';font-size:12px;font-weight:500;line-height:16px;}
+
+  @media (max-width:719px){
+    .t-headline-lg{font-size:28px;font-weight:700;line-height:34px;letter-spacing:-0.01em;}
+  }
+
+  /* ============ LAYOUT SHELL ============ */
+  #app{min-height:100vh;display:flex;flex-direction:column;}
+
+  .ticker{
+    background:var(--inverse-surface);
+    color:var(--inverse-on-surface);
+    display:flex;
+    align-items:center;
+    gap:var(--space-sm);
+    padding:8px var(--margin-mobile);
+    overflow:hidden;
+    white-space:nowrap;
+  }
+  .ticker .dot{
+    width:8px;height:8px;border-radius:var(--radius-full);
+    background:var(--inverse-primary);
+    flex:none;
+    animation:pulse 1.6s ease-in-out infinite;
+  }
+  @keyframes pulse{
+    0%,100%{opacity:1;transform:scale(1);}
+    50%{opacity:.45;transform:scale(.8);}
+  }
+  .ticker .label{
+    font-weight:700;letter-spacing:.04em;font-size:12px;color:var(--inverse-primary);flex:none;
+  }
+  .ticker-track{
+    flex:1;overflow:hidden;position:relative;height:20px;
+  }
+  .ticker-inner{
+    display:flex;gap:56px;position:absolute;white-space:nowrap;
+    animation:scroll-left 26s linear infinite;
+    font-size:14px;
+  }
+  @keyframes scroll-left{
+    from{transform:translateX(0);}
+    to{transform:translateX(-50%);}
+  }
+  @media (prefers-reduced-motion:reduce){
+    .ticker-inner{animation:none;}
+    .dot{animation:none;}
+  }
+
+  .topbar{
+    position:sticky;top:0;z-index:30;
+    background:var(--surface-container-lowest);
+    border-bottom:1px solid var(--surface-container-highest);
+    padding:14px var(--margin-mobile);
+    display:flex;align-items:center;gap:var(--space-sm);
+  }
+  .brand{
+    display:flex;align-items:center;gap:8px;
+    font-weight:800;font-size:20px;letter-spacing:-0.01em;
+    color:var(--on-surface);
+    flex:none;
+    background:none;border:none;cursor:pointer;padding:0;
+  }
+  .brand .mark{
+    width:30px;height:30px;border-radius:var(--radius);
+    background:var(--primary);
+    display:flex;align-items:center;justify-content:center;
+    color:var(--on-primary);flex:none;
+  }
+  .brand .mark svg{width:17px;height:17px;}
+  .brand-accent{color:var(--primary);}
+
+  .search-wrap{
+    flex:1;position:relative;max-width:520px;margin:0 auto;
+  }
+  .search-wrap svg.icon-search{
+    position:absolute;left:14px;top:50%;transform:translateY(-50%);
+    width:18px;height:18px;color:var(--outline);pointer-events:none;
+  }
+  .search-input{
+    width:100%;
+    background:var(--surface-container-low);
+    border:1px solid transparent;
+    border-radius:var(--radius-full);
+    padding:10px 16px 10px 42px;
+    font-size:14px;font-family:inherit;color:var(--on-surface);
+    transition:border-color .15s ease, background .15s ease;
+  }
+  .search-input::placeholder{color:var(--on-secondary-container);}
+  .search-input:focus{
+    outline:none;border-color:var(--primary);background:var(--surface-container-lowest);
+  }
+
+  .topbar-actions{display:flex;align-items:center;gap:8px;flex:none;}
+  .icon-btn{
+    width:38px;height:38px;border-radius:var(--radius-full);
+    border:1px solid var(--surface-container-highest);
+    background:var(--surface-container-lowest);
+    display:flex;align-items:center;justify-content:center;
+    cursor:pointer;color:var(--on-surface);position:relative;
+    transition:background .15s ease, border-color .15s ease;
+  }
+  .icon-btn:hover{background:var(--surface-container-low);}
+  .icon-btn svg{width:19px;height:19px;}
+  .icon-btn .badge{
+    position:absolute;top:-3px;right:-3px;
+    background:var(--primary);color:var(--on-primary);
+    font-size:10px;font-weight:700;line-height:1;
+    min-width:16px;height:16px;border-radius:var(--radius-full);
+    display:flex;align-items:center;justify-content:center;padding:0 3px;
+  }
+
+  /* ============ MAIN LAYOUT ============ */
+  .layout{
+    flex:1;
+    display:flex;
+    width:100%;
+  }
+
+  .sidebar{
+    display:none;
+    flex:none;
+    width:84px;
+    padding:var(--space-lg) 0;
+    flex-direction:column;
+    align-items:center;
+    gap:var(--space-md);
+    border-right:1px solid var(--surface-container-highest);
+    position:sticky;
+    top:53px;
+    height:calc(100vh - 53px);
+  }
+  .side-btn{
+    width:52px;height:52px;border-radius:var(--radius-lg);
+    border:none;background:transparent;color:var(--secondary);
+    display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;
+    cursor:pointer;transition:background .15s ease,color .15s ease;
+  }
+  .side-btn svg{width:21px;height:21px;}
+  .side-btn span{font-size:10px;font-weight:600;}
+  .side-btn:hover{background:var(--surface-container-low);color:var(--on-surface);}
+  .side-btn.active{background:var(--primary-fixed);color:var(--on-primary-fixed-variant);}
+  .side-spacer{flex:1;}
+
+  .content-wrap{
+    flex:1;min-width:0;
+    display:flex;
+    justify-content:center;
+    padding:var(--space-md) var(--margin-mobile) 100px;
+  }
+  .content-grid{
+    width:100%;
+    max-width:1280px;
+    display:grid;
+    grid-template-columns:1fr;
+    gap:var(--space-md);
+  }
+
+  main.feed-col{min-width:0;}
+  .view-header{
+    display:flex;align-items:baseline;justify-content:space-between;
+    margin-bottom:var(--space-sm);
+    gap:8px;flex-wrap:wrap;
+  }
+  .view-title{color:var(--on-surface);}
+  .view-sub{color:var(--on-surface-variant);margin-top:2px;}
+  .result-count{color:var(--secondary);}
+
+  /* chips */
+  .chips-row{
+    display:flex;gap:8px;overflow-x:auto;padding-bottom:var(--space-sm);
+    margin-bottom:var(--space-sm);
+    scrollbar-width:none;
+  }
+  .chips-row::-webkit-scrollbar{display:none;}
+  .chip{
+    flex:none;
+    padding:8px 16px;
+    border-radius:var(--radius-sm);
+    background:var(--surface-container);
+    color:var(--on-secondary-container);
+    border:1px solid transparent;
+    cursor:pointer;
+    white-space:nowrap;
+    transition:background .15s ease,color .15s ease;
+  }
+  .chip:hover{background:var(--surface-container-high);}
+  .chip.active{
+    background:var(--primary);color:var(--on-primary);
+  }
+
+  /* ============ NEWS CARDS ============ */
+  .feed{display:flex;flex-direction:column;gap:var(--space-md);}
+
+  .hero-card{
+    position:relative;border-radius:var(--radius-lg);overflow:hidden;
+    background:var(--surface-container-lowest);
+    box-shadow:var(--shadow-1);
+    cursor:pointer;border:none;text-align:left;padding:0;display:block;width:100%;
+  }
+  .hero-card img{width:100%;height:340px;object-fit:cover;}
+  .hero-card .hero-overlay{
+    position:absolute;inset:0;
+    background:linear-gradient(0deg, rgba(26,28,28,.86) 0%, rgba(26,28,28,.35) 55%, rgba(26,28,28,0) 100%);
+    display:flex;flex-direction:column;justify-content:flex-end;
+    padding:var(--space-md);
+  }
+  .hero-card .hero-tags{display:flex;gap:8px;margin-bottom:10px;}
+  .badge-breaking{
+    display:inline-flex;align-items:center;gap:5px;
+    background:var(--primary);color:var(--on-primary);
+    padding:5px 10px;border-radius:var(--radius-sm);
+    font-size:12px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;
+  }
+  .badge-breaking .dot-sm{width:6px;height:6px;background:#fff;border-radius:50%;animation:pulse 1.6s ease-in-out infinite;}
+  .badge-cat{
+    background:rgba(255,255,255,.16);color:#fff;backdrop-filter:blur(2px);
+    padding:5px 10px;border-radius:var(--radius-sm);font-size:12px;font-weight:600;
+    border:1px solid rgba(255,255,255,.25);
+  }
+  .hero-card h2{
+    color:#fff;margin:0 0 8px;
+    max-width:80%;
+  }
+  .hero-meta{color:rgba(255,255,255,.78);display:flex;gap:10px;align-items:center;font-size:13px;}
+  .hero-meta .sep{opacity:.5;}
+
+  .card-row{
+    display:grid;grid-template-columns:1fr;gap:var(--space-md);
+  }
+  @media (min-width:560px){
+    .card-row{grid-template-columns:1fr 1fr;}
+  }
+
+  .news-card{
+    border-radius:var(--radius-lg);
+    background:var(--surface-container-lowest);
+    box-shadow:var(--shadow-1);
+    overflow:hidden;
+    cursor:pointer;border:none;text-align:left;padding:0;
+    display:flex;flex-direction:column;
+    transition:transform .18s ease, box-shadow .18s ease;
+    position:relative;
+    width:100%;
+  }
+  .news-card:hover{transform:translateY(-2px);box-shadow:var(--shadow-2);}
+  .news-card .thumb-wrap{position:relative;}
+  .news-card img{width:100%;height:168px;object-fit:cover;}
+  .card-cat{
+    position:absolute;top:10px;left:10px;
+    background:rgba(26,28,28,.62);color:#fff;
+    padding:4px 9px;border-radius:var(--radius-sm);
+    font-size:11px;font-weight:700;letter-spacing:.03em;text-transform:uppercase;
+  }
+  .bookmark-btn{
+    position:absolute;top:8px;right:8px;
+    width:32px;height:32px;border-radius:var(--radius-full);
+    background:rgba(26,28,28,.5);border:none;color:#fff;
+    display:flex;align-items:center;justify-content:center;cursor:pointer;
+    transition:background .15s ease;
+  }
+  .bookmark-btn:hover{background:rgba(26,28,28,.75);}
+  .bookmark-btn svg{width:16px;height:16px;}
+  .bookmark-btn.saved{color:var(--inverse-primary);}
+  .bookmark-btn.saved svg{fill:currentColor;}
+
+  .card-body{padding:16px;display:flex;flex-direction:column;gap:8px;flex:1;}
+  .card-body h3{
+    margin:0;color:var(--on-surface);font-size:17px;font-weight:700;line-height:23px;letter-spacing:-0.005em;
+  }
+  .card-ai-tag{
+    display:inline-flex;align-items:center;gap:5px;align-self:flex-start;
+    background:rgba(183,19,26,0.06);
+    border:1px solid var(--outline-variant);
+    color:var(--primary);
+    padding:4px 9px;border-radius:var(--radius-sm);
+    font-size:11px;font-weight:600;
+  }
+  .card-ai-tag svg{width:11px;height:11px;}
+  .card-foot{
+    margin-top:auto;display:flex;align-items:center;justify-content:space-between;
+    color:var(--on-secondary-container);font-size:12px;padding-top:6px;
+  }
+  .card-foot .source{font-weight:600;color:var(--secondary);}
+  .card-foot .dot{margin:0 5px;opacity:.6;}
+
+  .empty-state{
+    text-align:center;padding:72px 20px;color:var(--on-surface-variant);
+    background:var(--surface-container-lowest);border-radius:var(--radius-lg);border:1px dashed var(--outline-variant);
+  }
+  .empty-state svg{width:38px;height:38px;color:var(--outline);margin-bottom:10px;}
+  .empty-state .es-title{color:var(--on-surface);margin-bottom:4px;}
+
+  /* ============ AI PANEL ============ */
+  .ai-panel{
+    display:none;
+    flex-direction:column;
+    gap:var(--space-md);
+  }
+  .ai-card{
+    background:var(--surface-container-lowest);
+    border:1px solid var(--outline-variant);
+    border-radius:var(--radius-lg);
+    box-shadow:var(--shadow-ai);
+    padding:20px;
+  }
+  .ai-card-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;}
+  .ai-card-head .h-left{display:flex;align-items:center;gap:8px;}
+  .ai-glyph{
+    width:30px;height:30px;border-radius:var(--radius);
+    background:linear-gradient(135deg, var(--primary), var(--primary-container));
+    display:flex;align-items:center;justify-content:center;color:#fff;flex:none;
+  }
+  .ai-glyph svg{width:16px;height:16px;}
+  .refresh-btn{
+    background:none;border:none;color:var(--secondary);cursor:pointer;
+    width:30px;height:30px;border-radius:var(--radius-full);display:flex;align-items:center;justify-content:center;
+    transition:background .15s ease, transform .3s ease;
+  }
+  .refresh-btn:hover{background:var(--surface-container-low);}
+  .refresh-btn.spin svg{animation:spin .5s ease;}
+  @keyframes spin{to{transform:rotate(180deg);}}
+  .refresh-btn svg{width:15px;height:15px;}
+
+  .briefing-list{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:12px;}
+  .briefing-list li{
+    display:flex;gap:10px;color:var(--on-surface);font-size:14px;line-height:21px;
+  }
+  .briefing-list .num{
+    flex:none;width:20px;height:20px;border-radius:var(--radius-full);
+    background:var(--primary-fixed);color:var(--on-primary-fixed-variant);
+    font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;margin-top:2px;
+  }
+  .briefing-foot{
+    margin-top:14px;padding-top:12px;border-top:1px solid var(--surface-container-highest);
+    color:var(--on-surface-variant);font-size:12px;
+  }
+
+  .trend-list{display:flex;flex-direction:column;gap:2px;}
+  .trend-item{
+    display:flex;align-items:center;justify-content:space-between;
+    padding:10px 4px;border-bottom:1px solid var(--surface-container);
+    cursor:pointer;background:none;border-left:none;border-right:none;border-top:none;width:100%;text-align:left;
+  }
+  .trend-item:last-child{border-bottom:none;}
+  .trend-item:hover .trend-name{color:var(--primary);}
+  .trend-name{color:var(--on-surface);font-size:13px;font-weight:600;transition:color .15s ease;}
+  .trend-count{color:var(--secondary);font-size:12px;}
+
+  /* chat */
+  .chat-card{
+    display:flex;flex-direction:column;
+    flex:1;min-height:380px;
+  }
+  .chat-scroll{
+    flex:1;overflow-y:auto;display:flex;flex-direction:column;gap:10px;
+    padding:2px 2px 10px;margin:4px -4px 10px;max-height:360px;
+  }
+  .bubble{
+    max-width:88%;padding:10px 13px;border-radius:var(--radius-md);font-size:14px;line-height:20px;
+  }
+  .bubble.ai{
+    align-self:flex-start;
+    background:rgba(183,19,26,0.05);
+    border:1px solid var(--outline-variant);
+    color:var(--on-surface);
+    border-top-left-radius:4px;
+  }
+  .bubble.user{
+    align-self:flex-end;
+    background:var(--secondary-container);
+    color:var(--on-secondary-container);
+    border-top-right-radius:4px;
+  }
+  .bubble ul{margin:6px 0 0;padding-left:18px;}
+  .bubble a.chat-link{color:var(--primary);font-weight:600;cursor:pointer;text-decoration:underline;}
+  .typing{align-self:flex-start;display:flex;gap:4px;padding:12px 13px;}
+  .typing span{width:6px;height:6px;border-radius:50%;background:var(--outline);animation:blink 1.2s infinite ease-in-out;}
+  .typing span:nth-child(2){animation-delay:.15s;}
+  .typing span:nth-child(3){animation-delay:.3s;}
+  @keyframes blink{0%,80%,100%{opacity:.25;}40%{opacity:1;}}
+
+  .prompt-chips{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px;}
+  .prompt-chip{
+    background:var(--surface-container-low);border:1px solid var(--surface-container-highest);
+    color:var(--on-surface-variant);border-radius:var(--radius-full);
+    padding:6px 12px;font-size:12px;cursor:pointer;transition:background .15s ease;
+  }
+  .prompt-chip:hover{background:var(--surface-container-high);}
+
+  .chat-input-row{display:flex;gap:8px;align-items:center;}
+  .chat-input{
+    flex:1;border:1px solid var(--surface-container-highest);background:var(--surface-container-low);
+    border-radius:var(--radius-full);padding:10px 16px;font-size:14px;font-family:inherit;color:var(--on-surface);
+    transition:border-color .15s ease;
+  }
+  .chat-input:focus{outline:none;border-color:var(--primary);background:var(--surface-container-lowest);}
+  .send-btn{
+    flex:none;width:40px;height:40px;border-radius:var(--radius-full);border:none;
+    background:var(--primary);color:var(--on-primary);cursor:pointer;
+    display:flex;align-items:center;justify-content:center;transition:background .15s ease,transform .1s ease;
+  }
+  .send-btn:hover{background:var(--primary-container);}
+  .send-btn:active{transform:scale(.92);}
+  .send-btn svg{width:16px;height:16px;}
+  .send-btn:disabled{opacity:.4;cursor:not-allowed;}
+
+  /* ============ BUTTONS (generic) ============ */
+  .btn{
+    font-family:inherit;font-size:14px;font-weight:600;
+    border-radius:var(--radius-full);padding:11px 22px;cursor:pointer;border:none;
+    display:inline-flex;align-items:center;gap:6px;transition:background .15s ease, border-color .15s ease, color .15s ease;
+  }
+  .btn-primary{background:var(--primary);color:var(--on-primary);}
+  .btn-primary:hover{background:var(--primary-container);}
+  .btn-ghost{background:transparent;color:var(--on-surface);border:1px solid var(--outline);}
+  .btn-ghost:hover{background:var(--surface-container-low);}
+
+  /* ============ BOTTOM NAV (mobile) ============ */
+  .bottom-nav{
+    position:fixed;left:0;right:0;bottom:0;z-index:40;
+    background:var(--surface-container-lowest);
+    border-top:1px solid var(--surface-container-highest);
+    display:flex;justify-content:space-around;align-items:center;
+    padding:8px 4px calc(8px + env(safe-area-inset-bottom));
+  }
+  .bn-btn{
+    background:none;border:none;color:var(--secondary);cursor:pointer;
+    display:flex;flex-direction:column;align-items:center;gap:3px;flex:1;padding:6px 2px;
+    border-radius:var(--radius);position:relative;
+  }
+  .bn-btn svg{width:21px;height:21px;}
+  .bn-btn span{font-size:10px;font-weight:600;}
+  .bn-btn.active{color:var(--primary);}
+  .bn-btn .badge{
+    position:absolute;top:2px;right:22%;
+    background:var(--primary);color:#fff;font-size:9px;font-weight:700;
+    min-width:14px;height:14px;border-radius:50%;display:flex;align-items:center;justify-content:center;
+  }
+
+  /* ============ MODAL: ARTICLE ============ */
+  .modal-overlay{
+    position:fixed;inset:0;background:rgba(26,28,28,.5);
+    display:none;align-items:flex-start;justify-content:center;
+    z-index:60;padding:0;overflow-y:auto;
+  }
+  .modal-overlay.open{display:flex;}
+  .article-modal{
+    background:var(--surface-container-lowest);
+    width:100%;max-width:760px;
+    min-height:100vh;
+    box-shadow:var(--shadow-2);
+    animation:modal-in .22s ease;
+  }
+  @media (min-width:760px){
+    .article-modal{min-height:0;margin:40px 0 40px;border-radius:var(--radius-lg);}
+  }
+  @keyframes modal-in{from{opacity:0;transform:translateY(14px);}to{opacity:1;transform:translateY(0);}}
+  .modal-top{
+    position:sticky;top:0;display:flex;justify-content:space-between;align-items:center;
+    padding:14px 18px;background:var(--surface-container-lowest);
+    border-bottom:1px solid var(--surface-container-highest);z-index:2;
+  }
+  @media (min-width:760px){ .modal-top{border-radius:var(--radius-lg) var(--radius-lg) 0 0;} }
+  .modal-hero-img{width:100%;height:280px;object-fit:cover;}
+  .modal-body{padding:24px 24px 40px;}
+  .modal-cat{color:var(--primary);font-weight:700;font-size:12px;letter-spacing:.04em;text-transform:uppercase;margin-bottom:8px;display:block;}
+  .modal-body h1{margin:0 0 12px;color:var(--on-surface);}
+  .modal-meta{display:flex;flex-wrap:wrap;gap:10px;align-items:center;color:var(--on-surface-variant);font-size:13px;margin-bottom:20px;}
+  .modal-meta .sep{opacity:.5;}
+  .modal-lede{color:var(--on-surface);font-weight:600;margin-bottom:16px;}
+  .modal-text p{color:var(--on-surface);margin:0 0 16px;}
+  .ai-insight-box{
+    background:rgba(183,19,26,0.05);border:1px solid var(--outline-variant);
+    border-radius:var(--radius-md);padding:16px;margin:24px 0;box-shadow:var(--shadow-ai);
+  }
+  .ai-insight-box .ai-insight-head{display:flex;align-items:center;gap:8px;margin-bottom:8px;color:var(--primary);font-weight:700;font-size:13px;}
+  .ai-insight-box .ai-insight-head svg{width:15px;height:15px;}
+  .ai-insight-box p{margin:0;color:var(--on-surface);font-size:14px;line-height:21px;}
+  .modal-tags{display:flex;flex-wrap:wrap;gap:8px;margin-top:20px;}
+  .tag-pill{background:var(--surface-container);color:var(--on-secondary-container);border-radius:var(--radius-sm);padding:6px 12px;font-size:12px;font-weight:600;}
+  .modal-actions{display:flex;gap:10px;margin-top:26px;flex-wrap:wrap;}
+
+  /* ============ AI SHEET (mobile) ============ */
+  .ai-sheet-overlay{
+    position:fixed;inset:0;background:rgba(26,28,28,.5);z-index:55;display:none;
+  }
+  .ai-sheet-overlay.open{display:block;}
+  .ai-sheet{
+    position:fixed;left:0;right:0;bottom:0;z-index:56;
+    background:var(--surface-container-lowest);
+    border-radius:var(--radius-lg) var(--radius-lg) 0 0;
+    max-height:88vh;display:flex;flex-direction:column;
+    transform:translateY(100%);transition:transform .25s ease;
+    box-shadow:var(--shadow-2);
+  }
+  .ai-sheet.open{transform:translateY(0);}
+  .sheet-handle{width:36px;height:4px;background:var(--surface-container-highest);border-radius:var(--radius-full);margin:10px auto;flex:none;}
+  .sheet-scroll{overflow-y:auto;padding:0 18px 18px;flex:1;}
+
+  /* ============ DESKTOP GRID SWITCH ============ */
+  @media (min-width:1024px){
+    .sidebar{display:flex;}
+    .content-grid{grid-template-columns:minmax(0,8fr) minmax(300px,4fr);align-items:start;}
+    .ai-panel{display:flex;position:sticky;top:calc(53px + var(--space-md));}
+    .bottom-nav{display:none;}
+    .content-wrap{padding-left:calc(var(--margin-desktop) / 2.4);padding-right:calc(var(--margin-desktop) / 2.4);}
+  }
+  @media (min-width:1024px) and (min-width:1500px){
+    .content-wrap{padding-left:var(--margin-desktop);padding-right:var(--margin-desktop);}
+  }
+  @media (max-width:1023px){
+    .content-wrap{padding-bottom:88px;}
+  }
+  @media (min-width:1024px){
+    .search-wrap{max-width:420px;}
+  }
+
+  .visually-hidden{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;}
+</style>
+</head>
+<body>
+<div id="app">
+
+  <!-- Breaking ticker -->
+  <div class="ticker" role="status">
+    <span class="dot" aria-hidden="true"></span>
+    <span class="label">LIVE</span>
+    <div class="ticker-track">
+      <div class="ticker-inner" id="tickerInner"></div>
+    </div>
+  </div>
+
+  <!-- Top bar -->
+  <header class="topbar">
+    <button class="brand" id="logoBtn" aria-label="NewsFlow AI home">
+      <span class="mark">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l1.6 4.7L18 9l-4.4 1.3L12 15l-1.6-4.7L6 9l4.4-1.3L12 3z"/><path d="M19 14l.8 2.3L22 17l-2.2.7L19 20l-.8-2.3L16 17l2.2-.7L19 14z"/></svg>
+      </span>
+      <span>News<span class="brand-accent">Flow</span> <span style="font-weight:600;opacity:.55;font-size:14px;">AI</span></span>
+    </button>
+    <div class="search-wrap">
+      <svg class="icon-search" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
+      <input type="search" class="search-input" id="searchInput" placeholder="Search headlines, topics, sources…" aria-label="Search news" />
+    </div>
+    <div class="topbar-actions">
+      <button class="icon-btn" id="bookmarkTopBtn" aria-label="Saved articles">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>
+        <span class="badge" id="bookmarkBadge" style="display:none;">0</span>
+      </button>
+      <button class="icon-btn" id="aiTopBtn" aria-label="Open AI assistant">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l1.6 4.7L18 9l-4.4 1.3L12 15l-1.6-4.7L6 9l4.4-1.3L12 3z"/><path d="M19 14l.8 2.3L22 17l-2.2.7L19 20l-.8-2.3L16 17l2.2-.7L19 14z"/></svg>
+      </button>
+    </div>
+  </header>
+
+  <div class="layout">
+    <!-- Desktop sidebar -->
+    <nav class="sidebar" aria-label="Primary">
+      <button class="side-btn active" data-nav="home" aria-label="Home">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11l9-8 9 8"/><path d="M5 10v10a1 1 0 0 0 1 1h4v-6h4v6h4a1 1 0 0 0 1-1V10"/></svg>
+        <span>Home</span>
+      </button>
+      <button class="side-btn" data-nav="discover" aria-label="Discover">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M15.5 8.5l-2 5.5-5.5 2 2-5.5z"/></svg>
+        <span>Discover</span>
+      </button>
+      <button class="side-btn" data-nav="bookmarks" aria-label="Saved">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>
+        <span>Saved</span>
+      </button>
+      <div class="side-spacer"></div>
+      <button class="side-btn" data-nav="settings" aria-label="Settings">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.6a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+        <span>Settings</span>
+      </button>
+    </nav>
+
+    <div class="content-wrap">
+      <div class="content-grid">
+        <!-- Feed column -->
+        <main class="feed-col">
+          <div class="view-header">
+            <div>
+              <h1 class="t-headline-lg view-title" id="viewTitle">Today's Briefing</h1>
+              <div class="t-body-md view-sub" id="viewSub">Synthesized from 24 sources, updated moments ago</div>
+            </div>
+            <div class="t-caption result-count" id="resultCount"></div>
+          </div>
+
+          <div class="chips-row" id="chipsRow"></div>
+
+          <section class="feed" id="feed" aria-live="polite"></section>
+        </main>
+
+        <!-- AI panel (desktop) -->
+        <aside class="ai-panel" aria-label="AI assistant">
+          <div class="ai-card">
+            <div class="ai-card-head">
+              <div class="h-left">
+                <span class="ai-glyph">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l1.6 4.7L18 9l-4.4 1.3L12 15l-1.6-4.7L6 9l4.4-1.3L12 3z"/><path d="M19 14l.8 2.3L22 17l-2.2.7L19 20l-.8-2.3L16 17l2.2-.7L19 14z"/></svg>
+                </span>
+                <span class="t-label-md" style="color:var(--on-surface);">Today's Briefing</span>
+              </div>
+              <button class="refresh-btn" id="refreshBriefing" aria-label="Regenerate briefing">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 4v6h-6"/><path d="M1 20v-6h6"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
+              </button>
+            </div>
+            <ol class="briefing-list" id="briefingList"></ol>
+            <div class="briefing-foot" id="briefingFoot">Generated by NewsFlow AI · based on today's top stories</div>
+          </div>
+
+          <div class="ai-card">
+            <div class="ai-card-head">
+              <div class="h-left">
+                <span class="t-label-md" style="color:var(--on-surface);">Trending Now</span>
+              </div>
+            </div>
+            <div class="trend-list" id="trendList"></div>
+          </div>
+
+          <div class="ai-card chat-card">
+            <div class="ai-card-head">
+              <div class="h-left">
+                <span class="ai-glyph">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+                </span>
+                <span class="t-label-md" style="color:var(--on-surface);">Ask NewsFlow AI</span>
+              </div>
+            </div>
+            <div class="chat-scroll" id="chatScrollDesktop"></div>
+            <div class="prompt-chips" id="promptChipsDesktop"></div>
+            <div class="chat-input-row">
+              <input class="chat-input" id="chatInputDesktop" type="text" placeholder="Ask about today's news…" aria-label="Message NewsFlow AI" />
+              <button class="send-btn" id="chatSendDesktop" aria-label="Send message">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><path d="M22 2L11 13"/><path d="M22 2l-7 20-4-9-9-4z"/></svg>
+              </button>
+            </div>
+          </div>
+        </aside>
+      </div>
+    </div>
+  </div>
+
+  <!-- Bottom nav (mobile) -->
+  <nav class="bottom-nav" aria-label="Primary">
+    <button class="bn-btn active" data-nav="home">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11l9-8 9 8"/><path d="M5 10v10a1 1 0 0 0 1 1h4v-6h4v6h4a1 1 0 0 0 1-1V10"/></svg>
+      <span>Home</span>
+    </button>
+    <button class="bn-btn" data-nav="discover">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M15.5 8.5l-2 5.5-5.5 2 2-5.5z"/></svg>
+      <span>Discover</span>
+    </button>
+    <button class="bn-btn" data-nav="bookmarks" style="position:relative;">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>
+      <span>Saved</span>
+      <span class="badge" id="bookmarkBadgeMobile" style="display:none;">0</span>
+    </button>
+    <button class="bn-btn" data-nav="ai">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l1.6 4.7L18 9l-4.4 1.3L12 15l-1.6-4.7L6 9l4.4-1.3L12 3z"/><path d="M19 14l.8 2.3L22 17l-2.2.7L19 20l-.8-2.3L16 17l2.2-.7L19 14z"/></svg>
+      <span>AI</span>
+    </button>
+  </nav>
+
+  <!-- Article modal -->
+  <div class="modal-overlay" id="modalOverlay">
+    <div class="article-modal" role="dialog" aria-modal="true" aria-labelledby="modalHeadline">
+      <div class="modal-top">
+        <button class="icon-btn" id="modalClose" aria-label="Close article">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6L6 18"/><path d="M6 6l12 12"/></svg>
+        </button>
+        <button class="bookmark-btn" id="modalBookmark" style="position:static;background:var(--surface-container-low);color:var(--secondary);" aria-label="Save article">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>
+        </button>
+      </div>
+      <img class="modal-hero-img" id="modalImg" src="" alt="" />
+      <div class="modal-body">
+        <span class="modal-cat" id="modalCat"></span>
+        <h1 class="t-headline-lg" id="modalHeadline"></h1>
+        <div class="modal-meta">
+          <span id="modalSource" style="font-weight:600;color:var(--secondary);"></span>
+          <span class="sep">·</span>
+          <span id="modalTime"></span>
+          <span class="sep">·</span>
+          <span id="modalReadtime"></span>
+        </div>
+        <p class="t-body-lg modal-lede" id="modalLede"></p>
+        <div class="modal-text" id="modalText"></div>
+
+        <div class="ai-insight-box">
+          <div class="ai-insight-head">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l1.6 4.7L18 9l-4.4 1.3L12 15l-1.6-4.7L6 9l4.4-1.3L12 3z"/><path d="M19 14l.8 2.3L22 17l-2.2.7L19 20l-.8-2.3L16 17l2.2-.7L19 14z"/></svg>
+            AI KEY TAKEAWAY
+          </div>
+          <p id="modalInsight"></p>
+        </div>
+
+        <div class="modal-tags" id="modalTags"></div>
+
+        <div class="modal-actions">
+          <button class="btn btn-primary" id="askAiAboutBtn">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round" width="15" height="15"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+            Ask AI about this
+          </button>
+          <button class="btn btn-ghost" id="modalCloseBtn2">Back to feed</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- AI sheet (mobile) -->
+  <div class="ai-sheet-overlay" id="aiSheetOverlay"></div>
+  <div class="ai-sheet" id="aiSheet" role="dialog" aria-modal="true" aria-label="AI assistant">
+    <div class="sheet-handle"></div>
+    <div class="sheet-scroll">
+      <div class="ai-card-head" style="margin-top:4px;">
+        <div class="h-left">
+          <span class="ai-glyph">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l1.6 4.7L18 9l-4.4 1.3L12 15l-1.6-4.7L6 9l4.4-1.3L12 3z"/><path d="M19 14l.8 2.3L22 17l-2.2.7L19 20l-.8-2.3L16 17l2.2-.7L19 14z"/></svg>
+          </span>
+          <span class="t-label-md" style="color:var(--on-surface);">NewsFlow AI</span>
+        </div>
+        <button class="icon-btn" id="aiSheetClose" aria-label="Close AI panel">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6L6 18"/><path d="M6 6l12 12"/></svg>
+        </button>
+      </div>
+
+      <div class="ai-card" style="box-shadow:none;padding:14px;">
+        <div class="t-label-md" style="color:var(--on-surface);margin-bottom:10px;">Today's Briefing</div>
+        <ol class="briefing-list" id="briefingListMobile"></ol>
+      </div>
+
+      <div class="chat-scroll" id="chatScrollMobile" style="max-height:none;min-height:160px;"></div>
+      <div class="prompt-chips" id="promptChipsMobile"></div>
+    </div>
+    <div style="padding:12px 18px calc(14px + env(safe-area-inset-bottom));border-top:1px solid var(--surface-container-highest);">
+      <div class="chat-input-row">
+        <input class="chat-input" id="chatInputMobile" type="text" placeholder="Ask about today's news…" aria-label="Message NewsFlow AI" />
+        <button class="send-btn" id="chatSendMobile" aria-label="Send message">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><path d="M22 2L11 13"/><path d="M22 2l-7 20-4-9-9-4z"/></svg>
+        </button>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+(function(){
+  "use strict";
+
+  /* ============================================================
+     DATA
+  ============================================================ */
+  var CATEGORIES = ["Technology","Business","Politics","Science","World","Health","Climate"];
+
+  var ARTICLES = [
+    {
+      id:"a1", title:"Central Banks Signal Coordinated Pause as Inflation Cools Faster Than Expected",
+      category:"Business", source:"Capital Wire", time:minsAgo(38), readtime:"5 min read", breaking:true, trending:true, seed:"biz-central-bank",
+      lede:"Policymakers across three major economies hinted at holding rates steady through the next quarter, citing a sharper-than-forecast slowdown in consumer prices.",
+      body:[
+        "Officials from several central banks used a joint statement this week to signal a shared willingness to pause further rate increases, pointing to inflation figures that have cooled more quickly than most forecasts anticipated going into the year.",
+        "The tone marks a notable shift from the more cautious language used just two months ago, when policymakers were still emphasizing the risk of price pressures re-accelerating.",
+        "Markets responded within minutes of the statement's release, with government bond yields easing and equity futures ticking upward in after-hours trading.",
+        "Analysts caution that a pause is not the same as a pivot, and that any renewed uptick in core inflation readings could quickly put further increases back on the table."
+      ],
+      insight:"Markets are pricing this as the clearest signal yet of a rate plateau — but the AI notes officials avoided the word 'cut,' keeping room to reverse course if inflation data surprises to the upside.",
+      tags:["Interest Rates","Inflation","Central Banks"]
+    },
+    {
+      id:"a2", title:"Startup's Compact Fusion Reactor Clears Key Containment Milestone in Lab Trial",
+      category:"Science", source:"Orbital Desk", time:minsAgo(70), readtime:"6 min read", breaking:false, trending:true, seed:"sci-fusion-reactor",
+      lede:"Engineers confirmed a sustained plasma containment run inside a reactor roughly the size of a shipping container, a step the company says shortens its commercial timeline.",
+      body:[
+        "The trial, conducted at a private test facility, held a stable plasma reaction for several minutes longer than the company's previous best result, using a magnet configuration engineers describe as significantly more compact than earlier designs.",
+        "Independent physicists reviewing early data say the result is promising but caution that containment duration is only one of several thresholds a design needs to clear before net energy production becomes realistic.",
+        "The company, which has raised funding from a mix of energy and technology investors, says it plans a larger follow-up trial before the end of the year."
+      ],
+      insight:"This is a containment milestone, not a net-energy milestone — the AI flags that headlines conflating the two overstate how close commercial fusion power actually is.",
+      tags:["Energy","Fusion","Research"]
+    },
+    {
+      id:"a3", title:"Lawmakers Advance Bill Requiring Disclosure of AI Use in Political Advertising",
+      category:"Politics", source:"Capitol Ledger", time:minsAgo(95), readtime:"4 min read", breaking:false, trending:true, seed:"pol-ai-disclosure",
+      lede:"A bipartisan committee voted to send the measure to a full floor vote, setting up a debate over how synthetic media should be labeled ahead of the next election cycle.",
+      body:[
+        "The bill would require campaigns to include a visible disclosure on any advertisement that uses AI-generated or substantially AI-altered audio, video, or imagery of a candidate.",
+        "Supporters argue the measure closes an obvious gap as generative tools become cheap enough for even small local campaigns to use convincingly.",
+        "Critics on the committee raised concerns about enforcement and how regulators would define 'substantially altered' in a way that holds up to legal challenge.",
+        "The bill now heads to a floor vote, where its sponsors say they are confident but not certain of the votes needed to pass."
+      ],
+      insight:"The AI notes the bill's disclosure threshold is still undefined in the text — the fight over that single definition is likely to shape the entire floor debate.",
+      tags:["Elections","Regulation","AI Policy"]
+    },
+    {
+      id:"a4", title:"Coastal Cities Pilot 'Sponge' Infrastructure to Absorb Flash Flooding",
+      category:"Climate", source:"Global Desk", time:minsAgo(140), readtime:"5 min read", breaking:false, trending:false, seed:"climate-sponge-city",
+      lede:"A wave of permeable pavement and rain-garden retrofits is being tested across a handful of flood-prone coastal neighborhoods as storms grow more intense.",
+      body:[
+        "The pilot programs replace traditional concrete surfaces with permeable materials designed to absorb rainfall directly rather than funneling it into overwhelmed storm drains.",
+        "Early results from the first completed sites show a measurable drop in localized flooding during moderate storms, though officials caution the approach is not a substitute for larger drainage upgrades during extreme events.",
+        "Urban planners in several other coastal cities are watching the results closely as a lower-cost complement to major seawall and levee projects."
+      ],
+      insight:"The AI highlights a gap in the coverage: none of the pilot sites have yet been tested against a storm at the intensity models project as 'typical' within a decade.",
+      tags:["Urban Planning","Flooding","Infrastructure"]
+    },
+    {
+      id:"a5", title:"Chipmaker Unveils Neural Processor Built for On-Device AI, No Cloud Required",
+      category:"Technology", source:"TechWire", time:minsAgo(25), readtime:"4 min read", breaking:false, trending:true, seed:"tech-neural-chip",
+      lede:"The new processor is designed to run mid-sized AI models entirely on-device, aiming to cut latency and reduce reliance on cloud data centers.",
+      body:[
+        "The company says the chip can run models with several billion parameters locally, a scale that previously required a network connection to a remote server.",
+        "Device makers briefed on the launch say the appeal is twofold: faster response times for AI features, and a reduction in the recurring cloud-computing costs tied to every user query.",
+        "Skeptics note that on-device models still generally trail their cloud counterparts in raw capability, and that battery impact during sustained AI use remains an open question."
+      ],
+      insight:"The AI flags that the company's benchmark comparisons use its own previous chip as the baseline, not a competitor's current flagship — worth checking third-party benchmarks once available.",
+      tags:["Semiconductors","On-Device AI","Hardware"]
+    },
+    {
+      id:"a6", title:"New Study Links Consistent Sleep Timing, Not Just Duration, to Lower Heart Risk",
+      category:"Health", source:"Wellness Desk", time:minsAgo(180), readtime:"5 min read", breaking:false, trending:false, seed:"health-sleep-timing",
+      lede:"Researchers tracking several thousand adults over a multi-year period found that irregular sleep and wake times correlated with cardiovascular risk independent of total hours slept.",
+      body:[
+        "Participants who went to bed and woke up at wildly varying times, even while averaging a healthy amount of total sleep, showed higher rates of cardiovascular events than those with consistent schedules.",
+        "The study's authors say the finding suggests circadian regularity may be an underappreciated factor in heart health guidance, which has historically focused mostly on total sleep duration.",
+        "Outside researchers note the study is observational, meaning it shows a correlation rather than proving irregular sleep directly causes heart problems."
+      ],
+      insight:"The AI stresses the correlation-vs-causation caveat here — shift workers and people with irregular schedules often face other risk factors the study may not fully separate out.",
+      tags:["Sleep","Cardiovascular Health","Research"]
+    },
+    {
+      id:"a7", title:"Regional Trade Bloc Reaches Framework Deal on Cross-Border Data Rules",
+      category:"World", source:"Global Desk", time:minsAgo(210), readtime:"6 min read", breaking:false, trending:false, seed:"world-trade-data",
+      lede:"Trade ministers announced a framework intended to standardize how member countries handle cross-border data transfers, easing friction for tech and finance firms.",
+      body:[
+        "The framework sets common baseline standards for consent, storage, and transfer of personal data across member states, replacing what had been a patchwork of national rules.",
+        "Business groups broadly welcomed the announcement, saying the previous inconsistency had made regional expansion costly for mid-sized firms in particular.",
+        "Privacy advocates offered a more mixed reaction, arguing the framework's baseline protections are lower than the strictest existing national standards."
+      ],
+      insight:"The AI notes the framework is not yet binding — member states still need to ratify it individually, which has stalled similar agreements in the past.",
+      tags:["Trade","Data Privacy","Policy"]
+    },
+    {
+      id:"a8", title:"Automaker Recalls Over 200,000 Vehicles Over Software Glitch in Braking Assist",
+      category:"Business", source:"Capital Wire", time:minsAgo(50), readtime:"3 min read", breaking:false, trending:false, seed:"biz-recall-brakes",
+      lede:"A software update is being pushed remotely to affected vehicles after the company identified a rare condition that could delay automatic braking assistance.",
+      body:[
+        "The company said the issue affects a specific software build installed on vehicles manufactured over an eight-month window, and that no accidents have been confirmed as linked to the defect.",
+        "Most affected owners will receive the fix automatically over the air, while a smaller number of older units will need a dealership visit.",
+        "The recall is among the largest software-related callbacks the company has issued, underscoring how much modern vehicle safety now depends on code rather than hardware alone."
+      ],
+      insight:"The AI notes this is an over-the-air recall for most owners — a distinction worth surfacing since it changes the urgency compared with a traditional dealership recall.",
+      tags:["Auto Industry","Recalls","Software"]
+    },
+    {
+      id:"a9", title:"Astronomers Detect Unusually Regular Radio Pulses From Nearby Dwarf Galaxy",
+      category:"Science", source:"Orbital Desk", time:minsAgo(260), readtime:"5 min read", breaking:false, trending:false, seed:"sci-radio-pulses",
+      lede:"The signal's near-metronomic regularity has researchers debating between a rare stellar phenomenon and instrument artifacts, with follow-up observations already underway.",
+      body:[
+        "The pulses were first flagged by an automated detection system scanning archival radio telescope data, then confirmed with targeted follow-up observations over several nights.",
+        "Leading explanations include a previously undetected type of rotating neutron star, though researchers say they have not yet ruled out a mundane technical explanation.",
+        "A dedicated observing campaign using a larger array is scheduled for later this year, which researchers hope will settle the question."
+      ],
+      insight:"The AI flags that 'artifact until proven otherwise' is still the standard scientific default for signals like this — worth tempering expectations until the follow-up campaign reports back.",
+      tags:["Astronomy","Radio Astronomy","Space"]
+    },
+    {
+      id:"a10", title:"City Council Approves Largest Public Transit Expansion in Two Decades",
+      category:"Politics", source:"Capitol Ledger", time:minsAgo(300), readtime:"4 min read", breaking:false, trending:false, seed:"pol-transit-expansion",
+      lede:"The plan adds three new light-rail lines and doubles bus frequency on major corridors, funded through a mix of bonds and a dedicated sales tax increase.",
+      body:[
+        "The vote passed after months of public hearings, with the final plan trimmed slightly from the original proposal to address concerns from business owners along construction corridors.",
+        "Transit advocates called the plan a long-overdue investment, while some council members who voted against it cited concerns about long-term maintenance funding once construction bonds are paid down.",
+        "Construction on the first line is expected to begin within the year, with full build-out projected to take most of the decade."
+      ],
+      insight:"The AI points out the approved plan didn't include a long-term maintenance funding mechanism beyond year eight — a detail likely to resurface in future budget debates.",
+      tags:["Public Transit","Local Government","Infrastructure"]
+    },
+    {
+      id:"a11", title:"Wildfire Season Arrives Early as Drought Conditions Deepen Across the Region",
+      category:"Climate", source:"Global Desk", time:minsAgo(15), readtime:"4 min read", breaking:true, trending:true, seed:"climate-wildfire-season",
+      lede:"Fire officials say dry conditions typically seen in late summer have arrived weeks ahead of schedule, prompting early restrictions on outdoor burning.",
+      body:[
+        "Soil moisture readings across the region are running well below the historical average for this time of year, following a winter that brought significantly less snowpack than usual.",
+        "Fire officials have already issued burn restrictions in several counties, a step usually not taken until later in the season.",
+        "Emergency planners say crews and equipment are being pre-positioned earlier than in past years as a precaution."
+      ],
+      insight:"The AI notes this is the third consecutive year fire restrictions have started earlier than the year before — a pattern worth watching rather than a one-off.",
+      tags:["Wildfires","Drought","Climate"]
+    },
+    {
+      id:"a12", title:"Major Retailer Pilots AI Checkout That Requires No Scanning or Card Tap",
+      category:"Technology", source:"TechWire", time:minsAgo(115), readtime:"4 min read", breaking:false, trending:false, seed:"tech-ai-checkout",
+      lede:"Shoppers at a handful of pilot locations can now walk out with items automatically charged to their account, using a combination of computer vision and weight sensors.",
+      body:[
+        "The system tracks items customers pick up using overhead cameras and shelf sensors, then charges a linked account automatically as they exit the store.",
+        "The retailer says the pilot is aimed at high-traffic urban locations where checkout lines are the most common source of customer complaints.",
+        "Privacy researchers have raised questions about how long in-store tracking data is retained and whether it could be used beyond billing purposes."
+      ],
+      insight:"The AI notes the retailer hasn't yet published a data-retention policy for the in-store tracking footage — a natural follow-up question for anyone evaluating the privacy trade-off.",
+      tags:["Retail","Computer Vision","Privacy"]
+    },
+    {
+      id:"a13", title:"New Antibiotic Class Shows Promise Against Drug-Resistant Bacteria in Early Trial",
+      category:"Health", source:"Wellness Desk", time:minsAgo(230), readtime:"6 min read", breaking:false, trending:false, seed:"health-new-antibiotic",
+      lede:"A small early-stage trial found the compound cleared infections resistant to existing frontline antibiotics, though researchers caution the sample size was limited.",
+      body:[
+        "The trial enrolled a small group of patients with infections that had failed to respond to standard treatment, and the new compound cleared infection in a majority of cases.",
+        "Researchers say the drug works through a novel mechanism that resistant bacteria have not yet evolved defenses against, though they caution that resistance can emerge quickly once a drug is in wider use.",
+        "Larger trials are needed before any approval decision, a process researchers estimate could take several more years."
+      ],
+      insight:"The AI flags the small sample size clearly — promising early results like this historically have a high attrition rate by the time larger trials complete.",
+      tags:["Antibiotics","Public Health","Medical Research"]
+    },
+    {
+      id:"a14", title:"Diplomatic Talks Resume Over Disputed Shipping Lane After Months-Long Standoff",
+      category:"World", source:"Global Desk", time:minsAgo(45), readtime:"5 min read", breaking:false, trending:true, seed:"world-shipping-lane",
+      lede:"Officials from both sides confirmed a return to the negotiating table, though neither has signaled willingness to shift its core position on passage rights.",
+      body:[
+        "The talks mark the first direct engagement between the two sides in several months, after informal channels reported a thaw following backchannel discussions.",
+        "Shipping companies operating in the area have welcomed the news cautiously, noting that insurance premiums for vessels using the route have risen sharply during the standoff.",
+        "Analysts say a full resolution remains distant, but even a temporary de-escalation would likely ease shipping costs across the broader region."
+      ],
+      insight:"The AI notes shipping insurance premiums are the most concrete real-world indicator to watch here — they tend to move before any formal diplomatic announcement does.",
+      tags:["Diplomacy","Shipping","Trade Routes"]
+    },
+    {
+      id:"a15", title:"Freelance Platforms Report Surge in Demand for 'AI Oversight' Roles",
+      category:"Business", source:"Capital Wire", time:minsAgo(160), readtime:"4 min read", breaking:false, trending:false, seed:"biz-ai-oversight-jobs",
+      lede:"Postings for roles reviewing and correcting AI-generated output have grown sharply over the past year, spanning writing, coding, and customer service.",
+      body:[
+        "The roles typically involve reviewing AI-generated drafts for accuracy, tone, or compliance before they reach customers, and platforms say demand has grown across nearly every industry category.",
+        "Workers in these roles describe the job as part editor, part fact-checker, requiring both subject expertise and comfort working alongside AI tools rather than being replaced by them.",
+        "Labor economists are split on whether this represents a durable new job category or a transitional phase as companies calibrate how much to trust AI output unsupervised."
+      ],
+      insight:"The AI notes the irony isn't lost on it: a meaningful share of the demand for 'AI oversight' work is coming from companies building AI products themselves.",
+      tags:["Future of Work","AI","Labor Market"]
+    }
+  ];
+
+  function minsAgo(m){ return Date.now() - m*60000; }
+
+  function timeAgo(ts){
+    var diff = Math.max(1, Math.round((Date.now()-ts)/60000));
+    if(diff < 60) return diff + "m ago";
+    var h = Math.round(diff/60);
+    if(h < 24) return h + "h ago";
+    var d = Math.round(h/24);
+    return d + "d ago";
+  }
+
+  function imgUrl(seed, w, h){
+    return "https://picsum.photos/seed/"+encodeURIComponent(seed)+"/"+w+"/"+h;
+  }
+
+  /* ============================================================
+     STATE
+  ============================================================ */
+  var state = {
+    category: "All",
+    query: "",
+    view: "home", // home | discover | bookmarks
+    bookmarks: loadBookmarks(),
+    currentArticleId: null
+  };
+
+  function loadBookmarks(){
+    try{
+      var raw = localStorage.getItem("newsflow_bookmarks");
+      return raw ? JSON.parse(raw) : [];
+    }catch(e){ return []; }
+  }
+  function saveBookmarks(){
+    try{ localStorage.setItem("newsflow_bookmarks", JSON.stringify(state.bookmarks)); }catch(e){}
+  }
+  function isBookmarked(id){ return state.bookmarks.indexOf(id) !== -1; }
+  function toggleBookmark(id){
+    var i = state.bookmarks.indexOf(id);
+    if(i === -1) state.bookmarks.push(id); else state.bookmarks.splice(i,1);
+    saveBookmarks();
+    updateBookmarkBadges();
+    renderFeed();
+    if(state.currentArticleId === id) syncModalBookmarkBtn();
+  }
+
+  function updateBookmarkBadges(){
+    var n = state.bookmarks.length;
+    [ "bookmarkBadge","bookmarkBadgeMobile" ].forEach(function(id){
+      var el = document.getElementById(id);
+      if(!el) return;
+      if(n > 0){ el.style.display = "flex"; el.textContent = n > 99 ? "99+" : String(n); }
+      else { el.style.display = "none"; }
+    });
+  }
+
+  /* ============================================================
+     ICONS (small helper set reused in JS-built markup)
+  ============================================================ */
+  var ICON_BOOKMARK = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>';
+  var ICON_SPARK = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l1.6 4.7L18 9l-4.4 1.3L12 15l-1.6-4.7L6 9l4.4-1.3L12 3z"/><path d="M19 14l.8 2.3L22 17l-2.2.7L19 20l-.8-2.3L16 17l2.2-.7L19 14z"/></svg>';
+  var ICON_INBOX = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M22 12h-6l-2 3h-4l-2-3H2"/><path d="M5.45 5.11L2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"/></svg>';
+
+  function escapeHtml(s){
+    return String(s).replace(/[&<>"']/g, function(c){
+      return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c];
+    });
+  }
+
+  /* ============================================================
+     TICKER
+  ============================================================ */
+  function renderTicker(){
+    var items = ARTICLES.filter(function(a){ return a.breaking || a.trending; })
+      .slice(0,6)
+      .map(function(a){ return escapeHtml(a.title); });
+    var html = items.map(function(t){ return '<span>'+t+'</span>'; }).join("");
+    document.getElementById("tickerInner").innerHTML = html + html; // duplicate for seamless loop
+  }
+
+  /* ============================================================
+     CHIPS
+  ============================================================ */
+  function renderChips(){
+    var row = document.getElementById("chipsRow");
+    var cats = ["All"].concat(CATEGORIES);
+    row.innerHTML = cats.map(function(c){
+      var active = c === state.category ? " active" : "";
+      return '<button class="chip'+active+'" data-cat="'+escapeHtml(c)+'">'+escapeHtml(c)+'</button>';
+    }).join("");
+    Array.prototype.forEach.call(row.querySelectorAll(".chip"), function(btn){
+      btn.addEventListener("click", function(){
+        state.category = btn.getAttribute("data-cat");
+        renderChips();
+        renderFeed();
+      });
+    });
+  }
+
+  /* ============================================================
+     FEED
+  ============================================================ */
+  function getFilteredArticles(){
+    var list = ARTICLES.slice();
+
+    if(state.view === "bookmarks"){
+      list = list.filter(function(a){ return isBookmarked(a.id); });
+    } else if(state.view === "discover"){
+      list = list.filter(function(a){ return a.trending; });
+    }
+
+    if(state.category !== "All"){
+      list = list.filter(function(a){ return a.category === state.category; });
+    }
+
+    var q = state.query.trim().toLowerCase();
+    if(q){
+      list = list.filter(function(a){
+        return a.title.toLowerCase().indexOf(q) !== -1 ||
+               a.category.toLowerCase().indexOf(q) !== -1 ||
+               a.source.toLowerCase().indexOf(q) !== -1 ||
+               a.tags.join(" ").toLowerCase().indexOf(q) !== -1 ||
+               a.lede.toLowerCase().indexOf(q) !== -1;
+      });
+    }
+
+    list.sort(function(x,y){ return y.time - x.time; });
+    return list;
+  }
+
+  function updateViewHeader(){
+    var titleEl = document.getElementById("viewTitle");
+    var subEl = document.getElementById("viewSub");
+    var chipsRow = document.getElementById("chipsRow");
+    if(state.view === "bookmarks"){
+      titleEl.textContent = "Saved Articles";
+      subEl.textContent = state.bookmarks.length ? "Everything you've bookmarked, in one place" : "Nothing saved yet";
+      chipsRow.style.display = "none";
+    } else if(state.view === "discover"){
+      titleEl.textContent = "Trending Now";
+      subEl.textContent = "What's generating the most attention right now";
+      chipsRow.style.display = "flex";
+    } else {
+      titleEl.textContent = "Today's Briefing";
+      subEl.textContent = "Synthesized from 24 sources, updated moments ago";
+      chipsRow.style.display = "flex";
+    }
+  }
+
+  function renderFeed(){
+    updateViewHeader();
+    var list = getFilteredArticles();
+    var feedEl = document.getElementById("feed");
+    var countEl = document.getElementById("resultCount");
+    countEl.textContent = list.length + (list.length === 1 ? " story" : " stories");
+
+    if(list.length === 0){
+      feedEl.innerHTML =
+        '<div class="empty-state">'+
+          ICON_INBOX +
+          '<div class="t-headline-md es-title">'+(state.view === "bookmarks" ? "No saved articles" : "No stories match")+'</div>'+
+          '<div class="t-body-md">'+(state.view === "bookmarks" ? "Tap the bookmark icon on any story to save it here." : "Try a different category or search term.")+'</div>'+
+        '</div>';
+      return;
+    }
+
+    var hero = null;
+    var rest = list;
+    if(state.view === "home" && state.category === "All" && !state.query.trim()){
+      hero = list[0];
+      rest = list.slice(1);
+    }
+
+    var html = "";
+    if(hero){
+      html += heroCardHtml(hero);
+    }
+    html += '<div class="card-row">' + rest.map(newsCardHtml).join("") + '</div>';
+    feedEl.innerHTML = html;
+
+    wireCardEvents(feedEl);
+  }
+
+  function heroCardHtml(a){
+    return (
+      '<button class="hero-card" data-open="'+a.id+'">'+
+        '<img src="'+imgUrl(a.seed, 1000, 600)+'" alt="" loading="lazy" />'+
+        '<div class="hero-overlay">'+
+          '<div class="hero-tags">'+
+            (a.breaking ? '<span class="badge-breaking"><span class="dot-sm"></span>Breaking</span>' : '') +
+            '<span class="badge-cat">'+escapeHtml(a.category)+'</span>'+
+          '</div>'+
+          '<h2 class="t-headline-lg">'+escapeHtml(a.title)+'</h2>'+
+          '<div class="hero-meta"><span>'+escapeHtml(a.source)+'</span><span class="sep">·</span><span>'+timeAgo(a.time)+'</span><span class="sep">·</span><span>'+a.readtime+'</span></div>'+
+        '</div>'+
+      '</button>'
+    );
+  }
+
+  function newsCardHtml(a){
+    var saved = isBookmarked(a.id);
+    return (
+      '<button class="news-card" data-open="'+a.id+'">'+
+        '<div class="thumb-wrap">'+
+          '<img src="'+imgUrl(a.seed, 500, 340)+'" alt="" loading="lazy" />'+
+          '<span class="card-cat">'+escapeHtml(a.category)+'</span>'+
+          '<span class="bookmark-btn'+(saved?' saved':'')+'" data-bookmark="'+a.id+'" role="button" tabindex="0" aria-label="'+(saved?'Remove bookmark':'Save article')+'">'+ICON_BOOKMARK+'</span>'+
+        '</div>'+
+        '<div class="card-body">'+
+          '<h3>'+escapeHtml(a.title)+'</h3>'+
+          '<span class="card-ai-tag">'+ICON_SPARK+' AI insight available</span>'+
+          '<div class="card-foot">'+
+            '<span class="source">'+escapeHtml(a.source)+'</span>'+
+            '<span>'+timeAgo(a.time)+' <span class="dot">·</span> '+a.readtime+'</span>'+
+          '</div>'+
+        '</div>'+
+      '</button>'
+    );
+  }
+
+  function wireCardEvents(container){
+    Array.prototype.forEach.call(container.querySelectorAll("[data-open]"), function(el){
+      el.addEventListener("click", function(e){
+        if(e.target.closest("[data-bookmark]")) return;
+        openArticle(el.getAttribute("data-open"));
+      });
+    });
+    Array.prototype.forEach.call(container.querySelectorAll("[data-bookmark]"), function(el){
+      el.addEventListener("click", function(e){
+        e.stopPropagation();
+        toggleBookmark(el.getAttribute("data-bookmark"));
+      });
+      el.addEventListener("keydown", function(e){
+        if(e.key === "Enter" || e.key === " "){
+          e.preventDefault(); e.stopPropagation();
+          toggleBookmark(el.getAttribute("data-bookmark"));
+        }
+      });
+    });
+  }
+
+  /* ============================================================
+     ARTICLE MODAL
+  ============================================================ */
+  function findArticle(id){
+    for(var i=0;i<ARTICLES.length;i++){ if(ARTICLES[i].id === id) return ARTICLES[i]; }
+    return null;
+  }
+
+  function openArticle(id){
+    var a = findArticle(id);
+    if(!a) return;
+    state.currentArticleId = id;
+
+    document.getElementById("modalImg").src = imgUrl(a.seed, 900, 500);
+    document.getElementById("modalImg").alt = a.title;
+    document.getElementById("modalCat").textContent = (a.breaking ? "Breaking · " : "") + a.category;
+    document.getElementById("modalHeadline").textContent = a.title;
+    document.getElementById("modalSource").textContent = a.source;
+    document.getElementById("modalTime").textContent = timeAgo(a.time);
+    document.getElementById("modalReadtime").textContent = a.readtime;
+    document.getElementById("modalLede").textContent = a.lede;
+    document.getElementById("modalText").innerHTML = a.body.map(function(p){ return "<p>"+escapeHtml(p)+"</p>"; }).join("");
+    document.getElementById("modalInsight").textContent = a.insight;
+    document.getElementById("modalTags").innerHTML = a.tags.map(function(t){ return '<span class="tag-pill">'+escapeHtml(t)+'</span>'; }).join("");
+
+    syncModalBookmarkBtn();
+
+    var overlay = document.getElementById("modalOverlay");
+    overlay.classList.add("open");
+    overlay.scrollTop = 0;
+    document.body.style.overflow = "hidden";
+  }
+
+  function syncModalBookmarkBtn(){
+    var btn = document.getElementById("modalBookmark");
+    var saved = state.currentArticleId && isBookmarked(state.currentArticleId);
+    btn.classList.toggle("saved", !!saved);
+    btn.style.color = saved ? "var(--primary)" : "var(--secondary)";
+  }
+
+  function closeModal(){
+    document.getElementById("modalOverlay").classList.remove("open");
+    document.body.style.overflow = "";
+  }
+
+  document.getElementById("modalClose").addEventListener("click", closeModal);
+  document.getElementById("modalCloseBtn2").addEventListener("click", closeModal);
+  document.getElementById("modalOverlay").addEventListener("click", function(e){
+    if(e.target === this) closeModal();
+  });
+  document.getElementById("modalBookmark").addEventListener("click", function(){
+    if(state.currentArticleId) toggleBookmark(state.currentArticleId);
+  });
+  document.addEventListener("keydown", function(e){
+    if(e.key === "Escape"){
+      closeModal();
+      closeAiSheet();
+    }
+  });
+  document.getElementById("askAiAboutBtn").addEventListener("click", function(){
+    var a = findArticle(state.currentArticleId);
+    if(!a) return;
+    closeModal();
+    var question = "Tell me more about \"" + a.title + "\"";
+    if(window.innerWidth >= 1024){
+      document.getElementById("chatInputDesktop").value = question;
+      submitChat("desktop");
+    } else {
+      openAiSheet();
+      document.getElementById("chatInputMobile").value = question;
+      submitChat("mobile");
+    }
+  });
+
+  /* ============================================================
+     TRENDING PANEL
+  ============================================================ */
+  function renderTrending(){
+    var trending = ARTICLES.filter(function(a){ return a.trending; }).slice(0,5);
+    var el = document.getElementById("trendList");
+    el.innerHTML = trending.map(function(a, i){
+      return (
+        '<button class="trend-item" data-open="'+a.id+'">'+
+          '<span class="trend-name">'+escapeHtml(a.category)+' · '+escapeHtml(shorten(a.title, 46))+'</span>'+
+          '<span class="trend-count">#'+(i+1)+'</span>'+
+        '</button>'
+      );
+    }).join("");
+    Array.prototype.forEach.call(el.querySelectorAll("[data-open]"), function(btn){
+      btn.addEventListener("click", function(){ openArticle(btn.getAttribute("data-open")); });
+    });
+  }
+
+  function shorten(s, n){
+    return s.length > n ? s.slice(0,n-1).trim()+"…" : s;
+  }
+
+  /* ============================================================
+     AI BRIEFING
+  ============================================================ */
+  var briefingTemplates = [
+    function(a){ return "Markets and policy watchers are focused on " + a.title.toLowerCase() + "."; },
+    function(a){ return "In " + a.category.toLowerCase() + ", " + a.source + " reports: " + a.title.toLowerCase() + "."; },
+    function(a){ return a.title + " — " + a.insight.split(".")[0].replace(/^The AI (notes|flags|stresses|highlights|points out) that /i, "").replace(/^./, function(c){return c.toLowerCase();}) + "."; }
+  ];
+
+  function pickBriefingArticles(){
+    var breaking = ARTICLES.filter(function(a){ return a.breaking; });
+    var trending = ARTICLES.filter(function(a){ return a.trending && !a.breaking; });
+    var picks = breaking.concat(trending).slice(0,3);
+    if(picks.length < 3){
+      ARTICLES.forEach(function(a){ if(picks.length<3 && picks.indexOf(a)===-1) picks.push(a); });
+    }
+    return picks;
+  }
+
+  function generateBriefing(){
+    var picks = pickBriefingArticles();
+    var lines = picks.map(function(a, i){
+      var tpl = briefingTemplates[i % briefingTemplates.length];
+      return tpl(a);
+    });
+    var html = lines.map(function(text, i){
+      return '<li><span class="num">'+(i+1)+'</span><span>'+escapeHtml(text)+'</span></li>';
+    }).join("");
+    document.getElementById("briefingList").innerHTML = html;
+    document.getElementById("briefingListMobile").innerHTML = html.replace(/<li>/g, '<li style="font-size:13px;">');
+    document.getElementById("briefingFoot").textContent = "Generated by NewsFlow AI · " + timeAgo(Date.now() - 60000);
+  }
+
+  document.getElementById("refreshBriefing").addEventListener("click", function(){
+    var btn = this;
+    btn.classList.add("spin");
+    setTimeout(function(){ btn.classList.remove("spin"); }, 500);
+    setTimeout(generateBriefing, 220);
+  });
+
+  /* ============================================================
+     AI CHAT (rule-based synthesis over the local corpus)
+  ============================================================ */
+  var STOPWORDS = ["the","a","an","of","in","on","for","to","and","is","are","what","whats","about","tell","me","any","news","today","story","stories","article"];
+
+  function scoreArticle(article, queryWords){
+    var text = (article.title + " " + article.category + " " + article.tags.join(" ") + " " + article.lede).toLowerCase();
+    var score = 0;
+    queryWords.forEach(function(w){
+      if(w.length < 3) return;
+      if(text.indexOf(w) !== -1) score += (article.title.toLowerCase().indexOf(w) !== -1 ? 3 : 1);
+    });
+    return score;
+  }
+
+  function findCategoryMention(q){
+    for(var i=0;i<CATEGORIES.length;i++){
+      if(q.indexOf(CATEGORIES[i].toLowerCase()) !== -1) return CATEGORIES[i];
+    }
+    if(q.indexOf("tech") !== -1) return "Technology";
+    if(q.indexOf("environment") !== -1 || q.indexOf("weather") !== -1) return "Climate";
+    return null;
+  }
+
+  function aiRespond(rawText){
+    var q = rawText.trim().toLowerCase();
+    if(!q) return { html: "Ask me about a topic, a category, or say <em>“summarize today”</em> for a quick briefing." };
+
+    if(/^(hi|hey|hello|yo|sup)\b/.test(q)){
+      return { html: "Hi — I can summarize today's coverage, dig into a specific story, or point you to what's trending. What are you curious about?" };
+    }
+
+    if(q.indexOf("bookmark") !== -1 || q.indexOf("saved") !== -1){
+      var n = state.bookmarks.length;
+      if(n === 0) return { html: "You haven't saved anything yet — tap the bookmark icon on any story to keep it here." };
+      var saved = ARTICLES.filter(function(a){ return isBookmarked(a.id); }).slice(0,5);
+      return { html: "You've saved "+n+" "+(n===1?"story":"stories")+":<ul>" + saved.map(function(a){ return '<li><a class="chat-link" data-open="'+a.id+'">'+escapeHtml(a.title)+'</a></li>'; }).join("") + "</ul>" };
+    }
+
+    if(q.indexOf("breaking") !== -1){
+      var breaking = ARTICLES.filter(function(a){ return a.breaking; });
+      if(breaking.length === 0) return { html: "Nothing marked breaking right now — the top trending story is <a class=\"chat-link\" data-open=\""+ARTICLES[0].id+"\">"+escapeHtml(ARTICLES[0].title)+"</a>." };
+      return { html: "Breaking right now:<ul>" + breaking.map(function(a){ return '<li><a class="chat-link" data-open="'+a.id+'">'+escapeHtml(a.title)+'</a> — '+escapeHtml(a.source)+'</li>'; }).join("") + "</ul>" };
+    }
+
+    if(q.indexOf("trend") !== -1){
+      var trending = ARTICLES.filter(function(a){ return a.trending; }).slice(0,5);
+      return { html: "Trending now:<ul>" + trending.map(function(a){ return '<li><a class="chat-link" data-open="'+a.id+'">'+escapeHtml(a.title)+'</a></li>'; }).join("") + "</ul>" };
+    }
+
+    if(q.indexOf("summar") !== -1 || q.indexOf("briefing") !== -1 || (q.indexOf("today") !== -1 && q.indexOf("what") !== -1)){
+      var picks = pickBriefingArticles();
+      return { html: "Here's the gist of today's top coverage:<ul>" + picks.map(function(a){ return '<li><a class="chat-link" data-open="'+a.id+'">'+escapeHtml(a.title)+'</a></li>'; }).join("") + "</ul>Want me to go deeper on any of these?" };
+    }
+
+    var cat = findCategoryMention(q);
+    if(cat){
+      var inCat = ARTICLES.filter(function(a){ return a.category === cat; }).slice(0,4);
+      return { html: "In "+cat+", the stories getting the most attention:<ul>" + inCat.map(function(a){ return '<li><a class="chat-link" data-open="'+a.id+'">'+escapeHtml(a.title)+'</a></li>'; }).join("") + "</ul>" };
+    }
+
+    var words = q.split(/[^a-z0-9]+/).filter(function(w){ return w && STOPWORDS.indexOf(w) === -1; });
+    if(words.length){
+      var best = null, bestScore = 0;
+      ARTICLES.forEach(function(a){
+        var s = scoreArticle(a, words);
+        if(s > bestScore){ bestScore = s; best = a; }
+      });
+      if(best && bestScore > 0){
+        return { html: '<strong>'+escapeHtml(best.title)+'</strong><br/>' + escapeHtml(best.lede) + '<br/><br/><em>Key takeaway:</em> ' + escapeHtml(best.insight) + '<br/><a class="chat-link" data-open="'+best.id+'">Read the full story →</a>' };
+      }
+    }
+
+    return { html: "I couldn't find a strong match for that in today's coverage. Try a topic like “tech,” “climate,” or “what's trending,” or tap “summarize today.”" };
+  }
+
+  function appendBubble(scrollEl, role, html){
+    var b = document.createElement("div");
+    b.className = "bubble " + role;
+    b.innerHTML = html;
+    scrollEl.appendChild(b);
+    scrollEl.scrollTop = scrollEl.scrollHeight;
+    Array.prototype.forEach.call(b.querySelectorAll("[data-open]"), function(link){
+      link.addEventListener("click", function(){ openArticle(link.getAttribute("data-open")); });
+    });
+    return b;
+  }
+
+  function showTyping(scrollEl){
+    var t = document.createElement("div");
+    t.className = "bubble ai typing";
+    t.innerHTML = "<span></span><span></span><span></span>";
+    scrollEl.appendChild(t);
+    scrollEl.scrollTop = scrollEl.scrollHeight;
+    return t;
+  }
+
+  var GREETED = { desktop:false, mobile:false };
+  function ensureGreeting(which){
+    if(GREETED[which]) return;
+    GREETED[which] = true;
+    var scrollEl = document.getElementById(which === "desktop" ? "chatScrollDesktop" : "chatScrollMobile");
+    appendBubble(scrollEl, "ai", "Hi, I'm your NewsFlow AI assistant. I can summarize today's coverage, explain a story's significance, or surface what's trending. Try one of the prompts below, or ask your own question.");
+  }
+
+  var PROMPTS = [
+    "Summarize today's news",
+    "What's trending?",
+    "Any breaking news?",
+    "What's happening in Technology?"
+  ];
+
+  function renderPromptChips(){
+    [["promptChipsDesktop","desktop"], ["promptChipsMobile","mobile"]].forEach(function(pair){
+      var el = document.getElementById(pair[0]);
+      el.innerHTML = PROMPTS.map(function(p){ return '<button class="prompt-chip" data-prompt="'+escapeHtml(p)+'">'+escapeHtml(p)+'</button>'; }).join("");
+      Array.prototype.forEach.call(el.querySelectorAll("[data-prompt]"), function(btn){
+        btn.addEventListener("click", function(){
+          var which = pair[1];
+          var input = document.getElementById(which === "desktop" ? "chatInputDesktop" : "chatInputMobile");
+          input.value = btn.getAttribute("data-prompt");
+          submitChat(which);
+        });
+      });
+    });
+  }
+
+  function submitChat(which){
+    var inputEl = document.getElementById(which === "desktop" ? "chatInputDesktop" : "chatInputMobile");
+    var scrollEl = document.getElementById(which === "desktop" ? "chatScrollDesktop" : "chatScrollMobile");
+    var text = inputEl.value.trim();
+    if(!text) return;
+    ensureGreeting(which);
+    appendBubble(scrollEl, "user", escapeHtml(text));
+    inputEl.value = "";
+    var typing = showTyping(scrollEl);
+    var delay = 420 + Math.random()*420;
+    setTimeout(function(){
+      typing.remove();
+      var resp = aiRespond(text);
+      appendBubble(scrollEl, "ai", resp.html);
+    }, delay);
+  }
+
+  document.getElementById("chatSendDesktop").addEventListener("click", function(){ submitChat("desktop"); });
+  document.getElementById("chatSendMobile").addEventListener("click", function(){ submitChat("mobile"); });
+  document.getElementById("chatInputDesktop").addEventListener("keydown", function(e){ if(e.key === "Enter") submitChat("desktop"); });
+  document.getElementById("chatInputMobile").addEventListener("keydown", function(e){ if(e.key === "Enter") submitChat("mobile"); });
+
+  /* ============================================================
+     NAV / VIEW SWITCHING
+  ============================================================ */
+  function setActiveNav(navName){
+    Array.prototype.forEach.call(document.querySelectorAll(".side-btn[data-nav]"), function(b){
+      b.classList.toggle("active", b.getAttribute("data-nav") === navName);
+    });
+    Array.prototype.forEach.call(document.querySelectorAll(".bn-btn[data-nav]"), function(b){
+      b.classList.toggle("active", b.getAttribute("data-nav") === navName);
+    });
+  }
+
+  function goToView(view){
+    if(view === "ai"){
+      openAiSheet();
+      return;
+    }
+    if(view === "settings"){
+      // No settings surface in this build — gently no-op back to home.
+      view = "home";
+    }
+    state.view = view;
+    state.category = "All";
+    renderChips();
+    renderFeed();
+    setActiveNav(view);
+    window.scrollTo({top:0, behavior:"smooth"});
+  }
+
+  Array.prototype.forEach.call(document.querySelectorAll("[data-nav]"), function(btn){
+    btn.addEventListener("click", function(){ goToView(btn.getAttribute("data-nav")); });
+  });
+
+  document.getElementById("logoBtn").addEventListener("click", function(){ goToView("home"); });
+  document.getElementById("bookmarkTopBtn").addEventListener("click", function(){ goToView("bookmarks"); });
+  document.getElementById("aiTopBtn").addEventListener("click", function(){ openAiSheet(); document.getElementById("chatInputDesktop").focus(); if(window.innerWidth>=1024){ closeAiSheet(); document.getElementById("chatInputDesktop").scrollIntoView({behavior:"smooth", block:"center"}); } });
+
+  /* ============================================================
+     AI SHEET (mobile)
+  ============================================================ */
+  function openAiSheet(){
+    if(window.innerWidth >= 1024){
+      document.getElementById("chatInputDesktop").focus();
+      return;
+    }
+    ensureGreeting("mobile");
+    document.getElementById("aiSheetOverlay").classList.add("open");
+    document.getElementById("aiSheet").classList.add("open");
+    setActiveNav("ai");
+    document.body.style.overflow = "hidden";
+  }
+  function closeAiSheet(){
+    document.getElementById("aiSheetOverlay").classList.remove("open");
+    document.getElementById("aiSheet").classList.remove("open");
+    document.body.style.overflow = "";
+    setActiveNav(state.view);
+  }
+  document.getElementById("aiSheetOverlay").addEventListener("click", closeAiSheet);
+  document.getElementById("aiSheetClose").addEventListener("click", closeAiSheet);
+
+  /* ============================================================
+     SEARCH
+  ============================================================ */
+  var searchDebounce = null;
+  document.getElementById("searchInput").addEventListener("input", function(e){
+    var val = e.target.value;
+    clearTimeout(searchDebounce);
+    searchDebounce = setTimeout(function(){
+      state.query = val;
+      if(val.trim() && state.view !== "bookmarks"){ /* keep current view (home/discover) */ }
+      renderFeed();
+    }, 150);
+  });
+
+  /* ============================================================
+     INIT
+  ============================================================ */
+  function init(){
+    renderTicker();
+    renderChips();
+    renderTrending();
+    generateBriefing();
+    renderPromptChips();
+    updateBookmarkBadges();
+    renderFeed();
+  }
+
+  init();
+})();
+</script>
+</body>
+</html>

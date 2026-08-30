@@ -1,0 +1,1049 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>PlanDay</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.tailwindcss.com"></script>
+<style>
+  html, body, #root { height: 100%; }
+  body { margin: 0; font-family: 'Inter', sans-serif; }
+</style>
+
+<!-- Import map: lets the browser resolve bare specifiers like "react" via native ES modules -->
+<script type="importmap">
+{
+  "imports": {
+    "react": "https://esm.sh/react@18.3.1",
+    "react/": "https://esm.sh/react@18.3.1/",
+    "react-dom": "https://esm.sh/react-dom@18.3.1",
+    "react-dom/": "https://esm.sh/react-dom@18.3.1/",
+    "react-dom/client": "https://esm.sh/react-dom@18.3.1/client",
+    "lucide-react": "https://esm.sh/lucide-react@0.383.0?deps=react@18.3.1,react-dom@18.3.1"
+  }
+}
+</script>
+
+<!-- Babel Standalone: transpiles the JSX below in the browser, keeping ES module import/export syntax intact -->
+<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+<script>
+  // ---------------------------------------------------------------
+  // localStorage-backed replacement for the window.storage API that
+  // PlanDay was originally written against (only used inside the
+  // Claude Artifacts runtime). This keeps every save/load call in
+  // the app unchanged while persisting data in the visitor's browser.
+  // ---------------------------------------------------------------
+  (function () {
+    const PREFIX = "planday:";
+    window.storage = {
+      async get(key) {
+        try {
+          const raw = window.localStorage.getItem(PREFIX + key);
+          if (raw === null) return null;
+          return { key, value: raw, shared: false };
+        } catch (e) {
+          console.error("storage.get failed", e);
+          return null;
+        }
+      },
+      async set(key, value) {
+        try {
+          window.localStorage.setItem(PREFIX + key, value);
+          return { key, value, shared: false };
+        } catch (e) {
+          console.error("storage.set failed", e);
+          return null;
+        }
+      },
+      async delete(key) {
+        try {
+          const existed = window.localStorage.getItem(PREFIX + key) !== null;
+          window.localStorage.removeItem(PREFIX + key);
+          return { key, deleted: existed, shared: false };
+        } catch (e) {
+          console.error("storage.delete failed", e);
+          return null;
+        }
+      },
+      async list(prefix) {
+        try {
+          const keys = [];
+          for (let i = 0; i < window.localStorage.length; i++) {
+            const k = window.localStorage.key(i);
+            if (k && k.startsWith(PREFIX)) {
+              const short = k.slice(PREFIX.length);
+              if (!prefix || short.startsWith(prefix)) keys.push(short);
+            }
+          }
+          return { keys, prefix, shared: false };
+        } catch (e) {
+          console.error("storage.list failed", e);
+          return null;
+        }
+      },
+    };
+  })();
+</script>
+</head>
+<body>
+<div id="root"></div>
+
+<script type="text/babel" data-type="module" data-presets="react">
+import { useState, useEffect, useMemo, useRef } from "react";
+import ReactDOM from "react-dom/client";
+import {
+  Home, CalendarDays, Plus, CheckSquare, User as UserIcon, Search, X,
+  Trash2, Pencil, Flame, ChevronLeft, ChevronRight, Clock, Check,
+  Sparkles, Sun, Moon, CloudSun,
+} from "lucide-react";
+
+/* ---------------------------------- tokens ---------------------------------- */
+
+const T = {
+  primary: "#a43c12",
+  onPrimary: "#ffffff",
+  primaryContainer: "#ff7f50",
+  secondary: "#874e58",
+  secondaryContainer: "#ffb6c1",
+  tertiary: "#0c6780",
+  tertiaryContainer: "#66adc9",
+  background: "#f9f9f9",
+  surface: "#ffffff",
+  surfaceContainer: "#eeeeee",
+  surfaceContainerLow: "#f3f3f3",
+  onSurface: "#1a1c1c",
+  onSurfaceVariant: "#57423b",
+  outlineVariant: "#dec0b6",
+  error: "#ba1a1a",
+  errorContainer: "#ffdad6",
+  onErrorContainer: "#93000a",
+};
+const GRADIENT = `linear-gradient(135deg, ${T.primary} 0%, ${T.secondary} 100%)`;
+const CATEGORIES_DEFAULT = ["Study", "Work", "Personal", "Health", "Finance", "Projects"];
+const NAV_ITEMS = [
+  { id: "dashboard", label: "Home", icon: Home },
+  { id: "planner", label: "Planner", icon: Clock },
+  { id: "calendar", label: "Calendar", icon: CalendarDays },
+  { id: "habits", label: "Habits", icon: CheckSquare },
+  { id: "progress", label: "Progress", icon: Flame },
+  { id: "profile", label: "Profile", icon: UserIcon },
+];
+
+/* ---------------------------------- utils ---------------------------------- */
+
+function uid() { return Date.now().toString(36) + Math.random().toString(36).slice(2, 8); }
+function pad(n) { return String(n).padStart(2, "0"); }
+function dstr(d) { return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`; }
+function todayStr() { return dstr(new Date()); }
+function parseDate(s) { const [y, m, d] = s.split("-").map(Number); return new Date(y, m - 1, d); }
+function addDays(d, n) { const r = new Date(d); r.setDate(r.getDate() + n); return r; }
+function startOfWeek(d) { const day = d.getDay(); const diff = day === 0 ? -6 : 1 - day; const r = addDays(d, diff); r.setHours(0, 0, 0, 0); return r; }
+function fmtHuman(dateStr) { return parseDate(dateStr).toLocaleDateString(undefined, { weekday: "short", month: "short", day: "numeric" }); }
+function fmtTime(t) {
+  if (!t) return "";
+  const [h, m] = t.split(":").map(Number);
+  const ampm = h >= 12 ? "PM" : "AM";
+  const h12 = h % 12 === 0 ? 12 : h % 12;
+  return `${h12}:${pad(m)} ${ampm}`;
+}
+
+async function loadKey(key, fallback) {
+  try {
+    const r = await window.storage.get(key, false);
+    return r && r.value ? JSON.parse(r.value) : fallback;
+  } catch (e) {
+    return fallback;
+  }
+}
+async function saveKey(key, value) {
+  try {
+    await window.storage.set(key, JSON.stringify(value), false);
+  } catch (e) {
+    console.error("PlanDay: failed to save", key, e);
+  }
+}
+
+function seedTasks() {
+  const today = todayStr();
+  const tomorrow = dstr(addDays(new Date(), 1));
+  return [
+    { id: uid(), title: "Complete Python assignment", description: "", date: today, startTime: "09:00", endTime: "10:30", priority: "high", category: "Study", completed: false },
+    { id: uid(), title: "Attend AI class", description: "", date: today, startTime: "11:00", endTime: "12:00", priority: "high", category: "Study", completed: true },
+    { id: uid(), title: "Finish project documentation", description: "", date: today, startTime: "14:00", endTime: "15:00", priority: "low", category: "Projects", completed: false },
+    { id: uid(), title: "Practice SQL", description: "", date: today, startTime: "16:00", endTime: "17:00", priority: "low", category: "Study", completed: false },
+    { id: uid(), title: "Read 20 pages", description: "", date: today, startTime: "", endTime: "", priority: "low", category: "Personal", completed: false },
+    { id: uid(), title: "Review resume draft", description: "", date: tomorrow, startTime: "10:00", endTime: "11:00", priority: "high", category: "Work", completed: false },
+  ];
+}
+function seedHabits() {
+  return [
+    { id: uid(), name: "Drink water", frequency: "daily", createdAt: todayStr() },
+    { id: uid(), name: "Study", frequency: "daily", createdAt: todayStr() },
+    { id: uid(), name: "Exercise", frequency: "daily", createdAt: todayStr() },
+  ];
+}
+
+/* ------------------------------- shared UI ------------------------------- */
+
+function Card({ children, style, className = "" }) {
+  return (
+    <div className={`bg-white rounded-2xl ${className}`} style={{ boxShadow: "0px 10px 30px rgba(0,0,0,0.06)", padding: "24px", ...style }}>
+      {children}
+    </div>
+  );
+}
+
+function PrimaryButton({ children, onClick, className = "", type = "button", disabled }) {
+  return (
+    <button type={type} onClick={onClick} disabled={disabled}
+      className={`inline-flex items-center justify-center gap-2 rounded-xl px-5 py-3 font-medium text-sm transition-transform active:scale-95 disabled:opacity-50 ${className}`}
+      style={{ background: GRADIENT, color: T.onPrimary, boxShadow: `0 8px 20px ${T.primary}4D` }}>
+      {children}
+    </button>
+  );
+}
+function SecondaryButton({ children, onClick, className = "", type = "button" }) {
+  return (
+    <button type={type} onClick={onClick}
+      className={`inline-flex items-center justify-center gap-2 rounded-xl px-5 py-3 font-medium text-sm transition-transform active:scale-95 ${className}`}
+      style={{ background: `${T.tertiary}14`, color: T.tertiary, border: `1.5px solid ${T.tertiaryContainer}` }}>
+      {children}
+    </button>
+  );
+}
+function IconButton({ children, onClick, label, danger }) {
+  return (
+    <button type="button" onClick={onClick} aria-label={label} title={label}
+      className="inline-flex items-center justify-center rounded-full w-9 h-9 transition-colors hover:opacity-80 flex-shrink-0"
+      style={{ background: danger ? `${T.error}14` : T.surfaceContainerLow, color: danger ? T.error : T.onSurfaceVariant }}>
+      {children}
+    </button>
+  );
+}
+function Field({ label, children }) {
+  return (
+    <label className="block">
+      <span className="block mb-1.5" style={{ fontSize: 12, fontWeight: 500, color: T.onSurfaceVariant }}>{label}</span>
+      {children}
+    </label>
+  );
+}
+function EmptyState({ icon, title, subtitle, action }) {
+  return (
+    <div className="flex flex-col items-center justify-center text-center py-12 px-6 rounded-2xl" style={{ background: T.surfaceContainerLow }}>
+      <div className="w-14 h-14 rounded-full flex items-center justify-center mb-4" style={{ background: `${T.primary}14`, color: T.primary }}>
+        {icon}
+      </div>
+      <p style={{ fontWeight: 600, color: T.onSurface }}>{title}</p>
+      {subtitle && <p className="mt-1 max-w-xs" style={{ fontSize: 13, color: T.onSurfaceVariant }}>{subtitle}</p>}
+      {action && <div className="mt-4">{action}</div>}
+    </div>
+  );
+}
+function Toast({ message }) {
+  if (!message) return null;
+  return (
+    <div className="fixed left-1/2 z-50 -translate-x-1/2 rounded-xl px-4 py-3 text-sm font-medium" style={{ bottom: 96, background: T.onSurface, color: "#fff", boxShadow: "0 15px 40px rgba(0,0,0,0.25)" }}>
+      {message}
+    </div>
+  );
+}
+function ProgressRing({ pct, size = 120, stroke = 10, color = T.primary, label }) {
+  const r = (size - stroke) / 2;
+  const c = 2 * Math.PI * r;
+  const offset = c - (Math.min(100, Math.max(0, pct)) / 100) * c;
+  return (
+    <div className="relative inline-flex items-center justify-center">
+      <svg width={size} height={size} style={{ transform: "rotate(-90deg)" }}>
+        <circle cx={size / 2} cy={size / 2} r={r} stroke={`${color}1A`} strokeWidth={stroke} fill="none" />
+        <circle cx={size / 2} cy={size / 2} r={r} stroke={color} strokeWidth={stroke} fill="none"
+          strokeLinecap="round" strokeDasharray={c} strokeDashoffset={offset} style={{ transition: "stroke-dashoffset 0.6s ease" }} />
+      </svg>
+      <div className="absolute inset-0 flex flex-col items-center justify-center">
+        <span style={{ fontSize: 24, fontWeight: 700, color: T.onSurface }}>{Math.round(pct)}%</span>
+        {label && <span style={{ fontSize: 11, color: T.onSurfaceVariant }}>{label}</span>}
+      </div>
+    </div>
+  );
+}
+
+function TaskItem({ task, onToggle, onEdit, onDelete }) {
+  const accent = task.priority === "high" ? T.primary : T.tertiary;
+  return (
+    <div className="flex items-center gap-3 rounded-2xl bg-white p-4" style={{ borderLeft: `4px solid ${accent}`, boxShadow: "0px 6px 16px rgba(0,0,0,0.04)" }}>
+      <button onClick={() => onToggle(task.id)} aria-label={task.completed ? "Mark incomplete" : "Mark complete"}
+        className="flex-shrink-0 w-6 h-6 rounded-md flex items-center justify-center transition-colors"
+        style={{ background: task.completed ? accent : "transparent", border: `2px solid ${task.completed ? accent : T.outlineVariant}` }}>
+        {task.completed && <Check size={14} color="#fff" strokeWidth={3} />}
+      </button>
+      <div className="flex-1 min-w-0">
+        <p className="truncate" style={{ fontSize: 15, fontWeight: 500, color: T.onSurface, textDecoration: task.completed ? "line-through" : "none", opacity: task.completed ? 0.55 : 1 }}>
+          {task.title}
+        </p>
+        <div className="flex items-center gap-2 mt-1 flex-wrap">
+          {task.startTime && (
+            <span className="inline-flex items-center gap-1" style={{ fontSize: 12, color: T.onSurfaceVariant }}>
+              <Clock size={12} /> {fmtTime(task.startTime)}{task.endTime ? ` – ${fmtTime(task.endTime)}` : ""}
+            </span>
+          )}
+          {task.category && (
+            <span className="rounded-full px-2 py-0.5" style={{ fontSize: 11, fontWeight: 600, background: `${T.tertiaryContainer}33`, color: T.tertiary }}>
+              {task.category}
+            </span>
+          )}
+        </div>
+      </div>
+      <div className="flex items-center gap-1 flex-shrink-0">
+        <IconButton onClick={() => onEdit(task)} label="Edit task"><Pencil size={15} /></IconButton>
+        <IconButton onClick={() => onDelete(task.id)} label="Delete task" danger><Trash2 size={15} /></IconButton>
+      </div>
+    </div>
+  );
+}
+
+/* --------------------------------- modals --------------------------------- */
+
+function TaskModal({ initial, categories, onSave, onClose }) {
+  const [title, setTitle] = useState(initial?.title || "");
+  const [description, setDescription] = useState(initial?.description || "");
+  const [date, setDate] = useState(initial?.date || todayStr());
+  const [startTime, setStartTime] = useState(initial?.startTime ?? "09:00");
+  const [endTime, setEndTime] = useState(initial?.endTime ?? "10:00");
+  const [priority, setPriority] = useState(initial?.priority || "high");
+  const [category, setCategory] = useState(initial?.category || categories[0] || "Personal");
+  const [error, setError] = useState("");
+
+  function handleSave() {
+    if (!title.trim()) { setError("Give this task a name."); return; }
+    if (startTime && endTime && endTime < startTime) { setError("End time should be after the start time."); return; }
+    onSave({
+      id: initial?.id || uid(),
+      title: title.trim(), description: description.trim(), date, startTime, endTime,
+      priority, category, completed: initial?.completed || false,
+    });
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-end md:items-center justify-center p-0 md:p-4" style={{ background: "rgba(26,28,28,0.45)" }} onClick={onClose}>
+      <div onClick={(e) => e.stopPropagation()} className="w-full md:max-w-md rounded-t-3xl md:rounded-3xl bg-white p-6 max-h-[90vh] overflow-y-auto" style={{ boxShadow: "0 15px 40px rgba(0,0,0,0.2)" }}>
+        <div className="flex items-center justify-between mb-5">
+          <h3 style={{ fontSize: 20, fontWeight: 600, color: T.onSurface }}>{initial?.id ? "Edit task" : "Add task"}</h3>
+          <IconButton onClick={onClose} label="Close"><X size={16} /></IconButton>
+        </div>
+        <div className="space-y-4">
+          <Field label="Task name">
+            <input autoFocus className="pd-input" value={title} onChange={(e) => { setTitle(e.target.value); setError(""); }} placeholder="e.g. Practice SQL" />
+          </Field>
+          <Field label="Description (optional)">
+            <textarea className="pd-input" rows={2} value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Add any notes" style={{ resize: "none" }} />
+          </Field>
+          <div className="grid grid-cols-2 gap-3">
+            <Field label="Date">
+              <input type="date" className="pd-input" value={date} onChange={(e) => setDate(e.target.value)} />
+            </Field>
+            <Field label="Category">
+              <select className="pd-input" value={category} onChange={(e) => setCategory(e.target.value)}>
+                {categories.map((c) => <option key={c} value={c}>{c}</option>)}
+              </select>
+            </Field>
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <Field label="Start time (optional)">
+              <input type="time" className="pd-input" value={startTime} onChange={(e) => setStartTime(e.target.value)} />
+            </Field>
+            <Field label="End time (optional)">
+              <input type="time" className="pd-input" value={endTime} onChange={(e) => setEndTime(e.target.value)} />
+            </Field>
+          </div>
+          <Field label="Priority">
+            <div className="flex gap-2">
+              {["high", "low"].map((p) => (
+                <button type="button" key={p} onClick={() => setPriority(p)}
+                  className="flex-1 rounded-xl py-2.5 text-sm font-medium capitalize transition-colors"
+                  style={{ background: priority === p ? (p === "high" ? T.primary : T.tertiary) : T.surfaceContainerLow, color: priority === p ? "#fff" : T.onSurfaceVariant }}>
+                  {p} priority
+                </button>
+              ))}
+            </div>
+          </Field>
+          {error && <p style={{ fontSize: 13, color: T.error }}>{error}</p>}
+        </div>
+        <div className="flex gap-3 mt-6">
+          <SecondaryButton onClick={onClose} className="flex-1">Cancel</SecondaryButton>
+          <PrimaryButton onClick={handleSave} className="flex-1">{initial?.id ? "Save changes" : "Add task"}</PrimaryButton>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function HabitModal({ onSave, onClose }) {
+  const [name, setName] = useState("");
+  const [days, setDays] = useState([0, 1, 2, 3, 4, 5, 6]);
+  const [error, setError] = useState("");
+  const labels = ["M", "T", "W", "T", "F", "S", "S"];
+
+  function toggleDay(i) { setDays((d) => (d.includes(i) ? d.filter((x) => x !== i) : [...d, i].sort())); }
+  function handleSave() {
+    if (!name.trim()) { setError("Give this habit a name."); return; }
+    if (days.length === 0) { setError("Pick at least one day."); return; }
+    onSave({ id: uid(), name: name.trim(), frequency: days.length === 7 ? "daily" : days, createdAt: todayStr() });
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-end md:items-center justify-center p-0 md:p-4" style={{ background: "rgba(26,28,28,0.45)" }} onClick={onClose}>
+      <div onClick={(e) => e.stopPropagation()} className="w-full md:max-w-sm rounded-t-3xl md:rounded-3xl bg-white p-6" style={{ boxShadow: "0 15px 40px rgba(0,0,0,0.2)" }}>
+        <div className="flex items-center justify-between mb-5">
+          <h3 style={{ fontSize: 20, fontWeight: 600, color: T.onSurface }}>New habit</h3>
+          <IconButton onClick={onClose} label="Close"><X size={16} /></IconButton>
+        </div>
+        <Field label="Habit name">
+          <input autoFocus className="pd-input" value={name} onChange={(e) => { setName(e.target.value); setError(""); }} placeholder="e.g. Meditate" />
+        </Field>
+        <div className="mt-4">
+          <span className="block mb-1.5" style={{ fontSize: 12, fontWeight: 500, color: T.onSurfaceVariant }}>Repeat on</span>
+          <div className="flex gap-2">
+            {labels.map((l, i) => (
+              <button key={i} type="button" onClick={() => toggleDay(i)} className="w-9 h-9 rounded-full text-xs font-semibold transition-colors"
+                style={{ background: days.includes(i) ? GRADIENT : T.surfaceContainerLow, color: days.includes(i) ? "#fff" : T.onSurfaceVariant }}>
+                {l}
+              </button>
+            ))}
+          </div>
+        </div>
+        {error && <p className="mt-3" style={{ fontSize: 13, color: T.error }}>{error}</p>}
+        <div className="flex gap-3 mt-6">
+          <SecondaryButton onClick={onClose} className="flex-1">Cancel</SecondaryButton>
+          <PrimaryButton onClick={handleSave} className="flex-1">Add habit</PrimaryButton>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* --------------------------------- habits --------------------------------- */
+
+function HabitCard({ habit, completions, onToggleDay, onDelete }) {
+  const week = useMemo(() => { const monday = startOfWeek(new Date()); return Array.from({ length: 7 }, (_, i) => addDays(monday, i)); }, []);
+  const labels = ["M", "T", "W", "T", "F", "S", "S"];
+  const today = todayStr();
+  const scheduledDays = habit.frequency === "daily" ? [0, 1, 2, 3, 4, 5, 6] : habit.frequency;
+  const isDone = (dateStr) => !!completions[`${habit.id}|${dateStr}`];
+
+  let streak = 0;
+  for (let i = 0; i < 365; i++) {
+    const d = addDays(parseDate(today), -i);
+    const wd = (d.getDay() + 6) % 7;
+    if (!scheduledDays.includes(wd)) continue;
+    const ds = dstr(d);
+    if (isDone(ds)) streak++;
+    else if (i === 0) continue;
+    else break;
+  }
+
+  return (
+    <Card style={{ padding: 20 }}>
+      <div className="flex items-start justify-between mb-4">
+        <p style={{ fontWeight: 600, fontSize: 16, color: T.onSurface }}>{habit.name}</p>
+        <IconButton onClick={() => onDelete(habit.id)} label="Delete habit" danger><Trash2 size={14} /></IconButton>
+      </div>
+      <div className="flex items-center justify-between">
+        {week.map((d, i) => {
+          const ds = dstr(d);
+          const scheduled = scheduledDays.includes(i);
+          const done = isDone(ds);
+          const future = ds > today;
+          const isToday = ds === today;
+          return (
+            <button key={ds} disabled={!scheduled || future} onClick={() => onToggleDay(habit.id, ds)} className="flex flex-col items-center gap-1.5" style={{ opacity: scheduled ? 1 : 0.3 }}>
+              <span className="w-8 h-8 rounded-full flex items-center justify-center transition-transform active:scale-90"
+                style={{ background: done ? GRADIENT : "#eeeeee", border: isToday ? `2px solid ${T.primary}` : "2px solid transparent", cursor: scheduled && !future ? "pointer" : "default" }}>
+                {done && <Check size={13} color="#fff" strokeWidth={3} />}
+              </span>
+              <span style={{ fontSize: 10, color: T.onSurfaceVariant, fontWeight: 600 }}>{labels[i]}</span>
+            </button>
+          );
+        })}
+      </div>
+      <div className="flex items-center gap-1.5 mt-4" style={{ color: T.primary }}>
+        <Flame size={15} />
+        <span style={{ fontSize: 13, fontWeight: 600 }}>{streak} day{streak === 1 ? "" : "s"} streak</span>
+      </div>
+    </Card>
+  );
+}
+
+/* --------------------------------- screens --------------------------------- */
+
+function Dashboard({ tasks, habits, completions, profile, onToggleTask, onEditTask, onDeleteTask, onOpenAddTask, onOpenAddHabit }) {
+  const today = todayStr();
+  const todayTasks = tasks.filter((t) => t.date === today).sort((a, b) => (a.startTime || "").localeCompare(b.startTime || ""));
+  const completedCount = todayTasks.filter((t) => t.completed).length;
+  const pct = todayTasks.length ? (completedCount / todayTasks.length) * 100 : 0;
+  const upcoming = tasks.filter((t) => t.date > today && !t.completed).sort((a, b) => a.date.localeCompare(b.date)).slice(0, 4);
+  const hour = new Date().getHours();
+  const greeting = hour < 12 ? "Good morning" : hour < 17 ? "Good afternoon" : "Good evening";
+  const GreetIcon = hour < 12 ? Sun : hour < 17 ? CloudSun : Moon;
+
+  return (
+    <div className="space-y-6">
+      <div className="flex items-center justify-between flex-wrap gap-4">
+        <div>
+          <div className="flex items-center gap-2" style={{ color: T.onSurfaceVariant, fontSize: 13, fontWeight: 500 }}>
+            <GreetIcon size={15} />
+            <span>{new Date().toLocaleDateString(undefined, { weekday: "long", month: "long", day: "numeric" })}</span>
+          </div>
+          <h1 className="mt-1" style={{ fontSize: 30, fontWeight: 700, letterSpacing: "-0.01em", color: T.onSurface }}>{greeting}, {profile.name || "there"}</h1>
+          <p className="mt-1" style={{ fontSize: 14, color: T.onSurfaceVariant }}>
+            {todayTasks.length ? `You have ${todayTasks.length} task${todayTasks.length === 1 ? "" : "s"} planned today.` : "Nothing scheduled yet — plan your day below."}
+          </p>
+        </div>
+        <PrimaryButton onClick={onOpenAddTask}><Plus size={16} /> Add task</PrimaryButton>
+      </div>
+
+      <div className="grid md:grid-cols-3 gap-4">
+        <Card className="md:col-span-1 flex flex-col items-center justify-center text-center">
+          <ProgressRing pct={pct} label="today" />
+          <p className="mt-3" style={{ fontSize: 13, color: T.onSurfaceVariant }}>{completedCount} of {todayTasks.length} tasks done</p>
+        </Card>
+        <Card className="md:col-span-2">
+          <p className="mb-3" style={{ fontWeight: 600, color: T.onSurface }}>Today's tasks</p>
+          {todayTasks.length === 0 ? (
+            <EmptyState icon={<CheckSquare size={22} />} title="No tasks for today" subtitle="Add your first task and start planning your day." action={<PrimaryButton onClick={onOpenAddTask}><Plus size={15} /> Add task</PrimaryButton>} />
+          ) : (
+            <div className="space-y-2.5">{todayTasks.map((t) => <TaskItem key={t.id} task={t} onToggle={onToggleTask} onEdit={onEditTask} onDelete={onDeleteTask} />)}</div>
+          )}
+        </Card>
+      </div>
+
+      <div className="grid md:grid-cols-2 gap-4">
+        <Card>
+          <p className="mb-3" style={{ fontWeight: 600, color: T.onSurface }}>Upcoming</p>
+          {upcoming.length === 0 ? (
+            <p style={{ fontSize: 13, color: T.onSurfaceVariant }}>Nothing scheduled beyond today yet.</p>
+          ) : (
+            <div className="space-y-3">
+              {upcoming.map((t) => (
+                <div key={t.id} className="flex items-center justify-between gap-3">
+                  <div className="min-w-0">
+                    <p className="truncate" style={{ fontSize: 14, fontWeight: 500, color: T.onSurface }}>{t.title}</p>
+                    <p style={{ fontSize: 12, color: T.onSurfaceVariant }}>{fmtHuman(t.date)}</p>
+                  </div>
+                  <span className="rounded-full px-2 py-0.5 flex-shrink-0" style={{ fontSize: 10, fontWeight: 700, background: t.priority === "high" ? `${T.primary}1A` : `${T.tertiary}1A`, color: t.priority === "high" ? T.primary : T.tertiary }}>{t.priority}</span>
+                </div>
+              ))}
+            </div>
+          )}
+        </Card>
+        <Card>
+          <div className="flex items-center justify-between mb-3">
+            <p style={{ fontWeight: 600, color: T.onSurface }}>Habits today</p>
+            <button onClick={onOpenAddHabit} style={{ fontSize: 12, fontWeight: 600, color: T.tertiary }}>+ New</button>
+          </div>
+          {habits.length === 0 ? (
+            <p style={{ fontSize: 13, color: T.onSurfaceVariant }}>No habits yet — build your first routine.</p>
+          ) : (
+            <div className="space-y-3">
+              {habits.slice(0, 4).map((h) => {
+                const done = !!completions[`${h.id}|${today}`];
+                return (
+                  <div key={h.id} className="flex items-center justify-between">
+                    <span style={{ fontSize: 14, color: T.onSurface }}>{h.name}</span>
+                    <span className="w-6 h-6 rounded-full flex items-center justify-center" style={{ background: done ? GRADIENT : "#eeeeee" }}>{done && <Check size={12} color="#fff" strokeWidth={3} />}</span>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </Card>
+      </div>
+    </div>
+  );
+}
+
+function Planner({ tasks, selectedDate, setSelectedDate, onToggleTask, onEditTask, onDeleteTask, onOpenAddTask }) {
+  const [query, setQuery] = useState("");
+  const [chip, setChip] = useState("All");
+  const chips = ["All", "Today", "Upcoming", "Completed", "High priority"];
+  const today = todayStr();
+  const searching = query.trim().length > 0 || chip !== "All";
+
+  const filtered = useMemo(() => {
+    let list = tasks;
+    if (chip === "Today") list = list.filter((t) => t.date === today);
+    else if (chip === "Upcoming") list = list.filter((t) => t.date > today && !t.completed);
+    else if (chip === "Completed") list = list.filter((t) => t.completed);
+    else if (chip === "High priority") list = list.filter((t) => t.priority === "high");
+    if (query.trim()) {
+      const q = query.trim().toLowerCase();
+      list = list.filter((t) => t.title.toLowerCase().includes(q) || t.category.toLowerCase().includes(q));
+    }
+    return [...list].sort((a, b) => (a.date === b.date ? (a.startTime || "").localeCompare(b.startTime || "") : a.date.localeCompare(b.date)));
+  }, [tasks, query, chip, today]);
+
+  const dayTasks = tasks.filter((t) => t.date === selectedDate).sort((a, b) => (a.startTime || "").localeCompare(b.startTime || ""));
+  const timedTasks = dayTasks.filter((t) => t.startTime);
+  const untimedTasks = dayTasks.filter((t) => !t.startTime);
+  const hours = Array.from({ length: 24 }, (_, i) => i);
+  const tasksAtHour = (h) => timedTasks.filter((t) => parseInt(t.startTime.split(":")[0], 10) === h);
+
+  return (
+    <div className="space-y-5">
+      <div className="flex items-center justify-between flex-wrap gap-3">
+        <div>
+          <h2 style={{ fontSize: 24, fontWeight: 600, color: T.onSurface }}>Daily planner</h2>
+          <p style={{ fontSize: 13, color: T.onSurfaceVariant }}>{fmtHuman(selectedDate)}</p>
+        </div>
+        <div className="flex items-center gap-2">
+          <input type="date" className="pd-input" style={{ width: "auto" }} value={selectedDate} onChange={(e) => setSelectedDate(e.target.value)} />
+          <PrimaryButton onClick={onOpenAddTask}><Plus size={16} /> Add task</PrimaryButton>
+        </div>
+      </div>
+
+      <Card>
+        <div className="flex items-center gap-2 mb-3">
+          <Search size={16} color={T.onSurfaceVariant} />
+          <input className="pd-input" placeholder="Search all tasks by name or category" value={query} onChange={(e) => setQuery(e.target.value)} />
+        </div>
+        <div className="flex gap-2 flex-wrap">
+          {chips.map((c) => (
+            <button key={c} onClick={() => setChip(c)} className="rounded-full px-3 py-1.5 text-xs font-semibold transition-colors"
+              style={{ background: chip === c ? GRADIENT : T.surfaceContainerLow, color: chip === c ? "#fff" : T.onSurfaceVariant }}>{c}</button>
+          ))}
+        </div>
+      </Card>
+
+      {searching ? (
+        filtered.length === 0 ? (
+          <EmptyState icon={<Search size={22} />} title="No matching tasks" subtitle="Try a different search term or filter." />
+        ) : (
+          <div className="space-y-2.5">{filtered.map((t) => <TaskItem key={t.id} task={t} onToggle={onToggleTask} onEdit={onEditTask} onDelete={onDeleteTask} />)}</div>
+        )
+      ) : (
+        <div className="space-y-4">
+          {untimedTasks.length > 0 && (
+            <Card>
+              <p className="mb-3" style={{ fontWeight: 600, color: T.onSurface }}>Anytime</p>
+              <div className="space-y-2.5">{untimedTasks.map((t) => <TaskItem key={t.id} task={t} onToggle={onToggleTask} onEdit={onEditTask} onDelete={onDeleteTask} />)}</div>
+            </Card>
+          )}
+          {timedTasks.length === 0 && untimedTasks.length === 0 ? (
+            <EmptyState icon={<Clock size={22} />} title="Nothing on the timeline" subtitle="Add a task with a time to see it scheduled here." action={<PrimaryButton onClick={onOpenAddTask}><Plus size={15} /> Add task</PrimaryButton>} />
+          ) : timedTasks.length > 0 ? (
+            <Card>
+              {hours.map((h) => {
+                const items = tasksAtHour(h);
+                if (items.length === 0) return null;
+                return (
+                  <div key={h} className="flex gap-4 py-3" style={{ borderTop: `1px solid ${T.surfaceContainer}` }}>
+                    <span className="w-14 flex-shrink-0" style={{ fontSize: 12, color: T.onSurfaceVariant, fontWeight: 600 }}>{h % 12 === 0 ? 12 : h % 12}{h < 12 ? "AM" : "PM"}</span>
+                    <div className="flex-1 space-y-2">{items.map((t) => <TaskItem key={t.id} task={t} onToggle={onToggleTask} onEdit={onEditTask} onDelete={onDeleteTask} />)}</div>
+                  </div>
+                );
+              })}
+            </Card>
+          ) : null}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function CalendarView({ tasks, calendarMonth, setCalendarMonth, selectedDate, setSelectedDate, onToggleTask, onEditTask, onDeleteTask, onOpenAddTask }) {
+  const year = calendarMonth.getFullYear(), month = calendarMonth.getMonth();
+  const firstOfMonth = new Date(year, month, 1);
+  const startOffset = (firstOfMonth.getDay() + 6) % 7;
+  const daysInMonth = new Date(year, month + 1, 0).getDate();
+  const cells = [];
+  for (let i = 0; i < startOffset; i++) cells.push(null);
+  for (let d = 1; d <= daysInMonth; d++) cells.push(new Date(year, month, d));
+
+  const tasksByDate = useMemo(() => { const map = {}; tasks.forEach((t) => { (map[t.date] ||= []).push(t); }); return map; }, [tasks]);
+  const today = todayStr();
+  const dayTasks = tasks.filter((t) => t.date === selectedDate).sort((a, b) => (a.startTime || "").localeCompare(b.startTime || ""));
+
+  return (
+    <div className="space-y-5">
+      <div className="flex items-center justify-between">
+        <h2 style={{ fontSize: 24, fontWeight: 600, color: T.onSurface }}>Calendar</h2>
+        <PrimaryButton onClick={onOpenAddTask}><Plus size={16} /> Add task</PrimaryButton>
+      </div>
+      <Card>
+        <div className="flex items-center justify-between mb-4">
+          <IconButton onClick={() => setCalendarMonth(new Date(year, month - 1, 1))} label="Previous month"><ChevronLeft size={16} /></IconButton>
+          <p style={{ fontWeight: 600, color: T.onSurface }}>{calendarMonth.toLocaleDateString(undefined, { month: "long", year: "numeric" })}</p>
+          <IconButton onClick={() => setCalendarMonth(new Date(year, month + 1, 1))} label="Next month"><ChevronRight size={16} /></IconButton>
+        </div>
+        <div className="grid grid-cols-7 gap-1 mb-2">
+          {["M", "T", "W", "T", "F", "S", "S"].map((d, i) => <div key={i} className="text-center" style={{ fontSize: 11, fontWeight: 700, color: T.onSurfaceVariant }}>{d}</div>)}
+        </div>
+        <div className="grid grid-cols-7 gap-1">
+          {cells.map((d, i) => {
+            if (!d) return <div key={i} />;
+            const ds = dstr(d);
+            const dayItems = tasksByDate[ds] || [];
+            const isToday = ds === today;
+            const isSelected = ds === selectedDate;
+            return (
+              <button key={i} onClick={() => setSelectedDate(ds)} className="aspect-square rounded-xl flex flex-col items-center justify-center gap-1 transition-colors"
+                style={{ background: isSelected ? GRADIENT : isToday ? `${T.primary}14` : "transparent", color: isSelected ? "#fff" : T.onSurface }}>
+                <span style={{ fontSize: 13, fontWeight: isToday || isSelected ? 700 : 500 }}>{d.getDate()}</span>
+                {dayItems.length > 0 && <span className="w-1.5 h-1.5 rounded-full" style={{ background: isSelected ? "#fff" : T.tertiary }} />}
+              </button>
+            );
+          })}
+        </div>
+      </Card>
+      <Card>
+        <p className="mb-3" style={{ fontWeight: 600, color: T.onSurface }}>{fmtHuman(selectedDate)}</p>
+        {dayTasks.length === 0 ? (
+          <p style={{ fontSize: 13, color: T.onSurfaceVariant }}>No tasks on this day.</p>
+        ) : (
+          <div className="space-y-2.5">{dayTasks.map((t) => <TaskItem key={t.id} task={t} onToggle={onToggleTask} onEdit={onEditTask} onDelete={onDeleteTask} />)}</div>
+        )}
+      </Card>
+    </div>
+  );
+}
+
+function HabitsView({ habits, completions, onToggleDay, onDelete, onOpenAddHabit }) {
+  return (
+    <div className="space-y-5">
+      <div className="flex items-center justify-between">
+        <h2 style={{ fontSize: 24, fontWeight: 600, color: T.onSurface }}>Habits</h2>
+        <PrimaryButton onClick={onOpenAddHabit}><Plus size={16} /> New habit</PrimaryButton>
+      </div>
+      {habits.length === 0 ? (
+        <EmptyState icon={<Flame size={22} />} title="No habits yet" subtitle="Start a routine — even one small habit builds momentum." action={<PrimaryButton onClick={onOpenAddHabit}><Plus size={15} /> New habit</PrimaryButton>} />
+      ) : (
+        <div className="grid md:grid-cols-2 gap-4">{habits.map((h) => <HabitCard key={h.id} habit={h} completions={completions} onToggleDay={onToggleDay} onDelete={onDelete} />)}</div>
+      )}
+    </div>
+  );
+}
+
+function StatCard({ label, value }) {
+  return (
+    <Card style={{ padding: 18 }}>
+      <p style={{ fontSize: 22, fontWeight: 700, color: T.primary }}>{value}</p>
+      <p className="mt-1" style={{ fontSize: 12, color: T.onSurfaceVariant }}>{label}</p>
+    </Card>
+  );
+}
+
+function ProgressView({ tasks, habits, completions }) {
+  const today = new Date();
+  const last7 = Array.from({ length: 7 }, (_, i) => addDays(today, i - 6));
+  const dayStats = last7.map((d) => {
+    const ds = dstr(d);
+    const dayTasks = tasks.filter((t) => t.date === ds);
+    const done = dayTasks.filter((t) => t.completed).length;
+    const pct = dayTasks.length ? (done / dayTasks.length) * 100 : 0;
+    return { date: ds, label: d.toLocaleDateString(undefined, { weekday: "short" }), pct, count: dayTasks.length };
+  });
+  const activeDays = dayStats.filter((d) => d.count > 0);
+  const avg = activeDays.length ? Math.round(activeDays.reduce((s, d) => s + d.pct, 0) / activeDays.length) : 0;
+  const bestDay = activeDays.reduce((best, d) => (!best || d.pct > best.pct ? d : best), null);
+
+  const totalCompleted = tasks.filter((t) => t.completed).length;
+  const totalCreated = tasks.length;
+  const completionRate = totalCreated ? Math.round((totalCompleted / totalCreated) * 100) : 0;
+  const bestStreak = habits.reduce((max, h) => {
+    const scheduledDays = h.frequency === "daily" ? [0, 1, 2, 3, 4, 5, 6] : h.frequency;
+    let streak = 0;
+    for (let i = 0; i < 365; i++) {
+      const d = addDays(today, -i);
+      const wd = (d.getDay() + 6) % 7;
+      if (!scheduledDays.includes(wd)) continue;
+      const ds = dstr(d);
+      if (completions[`${h.id}|${ds}`]) streak++; else break;
+    }
+    return Math.max(max, streak);
+  }, 0);
+
+  return (
+    <div className="space-y-5">
+      <h2 style={{ fontSize: 24, fontWeight: 600, color: T.onSurface }}>Progress</h2>
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <StatCard label="Tasks completed" value={totalCompleted} />
+        <StatCard label="Tasks created" value={totalCreated} />
+        <StatCard label="Completion rate" value={`${completionRate}%`} />
+        <StatCard label="Best habit streak" value={`${bestStreak}d`} />
+      </div>
+      <Card>
+        <div className="flex items-center justify-between mb-4">
+          <p style={{ fontWeight: 600, color: T.onSurface }}>This week</p>
+          <span style={{ fontSize: 13, color: T.onSurfaceVariant }}>Average: {avg}%</span>
+        </div>
+        <div className="space-y-3">
+          {dayStats.map((d) => (
+            <div key={d.date} className="flex items-center gap-3">
+              <span className="w-10 flex-shrink-0" style={{ fontSize: 12, fontWeight: 600, color: T.onSurfaceVariant }}>{d.label}</span>
+              <div className="flex-1 h-3 rounded-full overflow-hidden" style={{ background: T.surfaceContainer }}>
+                <div style={{ width: `${d.pct}%`, height: "100%", background: GRADIENT, transition: "width 0.5s ease" }} />
+              </div>
+              <span className="w-10 text-right flex-shrink-0" style={{ fontSize: 12, color: T.onSurfaceVariant }}>{Math.round(d.pct)}%</span>
+            </div>
+          ))}
+        </div>
+        {bestDay && <p className="mt-4" style={{ fontSize: 13, color: T.onSurfaceVariant }}>Most productive day: <span style={{ fontWeight: 600, color: T.onSurface }}>{bestDay.label}</span></p>}
+      </Card>
+    </div>
+  );
+}
+
+function ProfileView({ profile, setProfile, categories, setCategories, onResetData, showToast }) {
+  const [name, setName] = useState(profile.name);
+  const [newCategory, setNewCategory] = useState("");
+
+  function saveName() {
+    if (!name.trim()) { showToast("Name can't be empty."); return; }
+    setProfile((p) => ({ ...p, name: name.trim() }));
+    showToast("Profile updated.");
+  }
+  function addCategory() {
+    const c = newCategory.trim();
+    if (!c) return;
+    if (categories.some((x) => x.toLowerCase() === c.toLowerCase())) { showToast("That category already exists."); return; }
+    setCategories((cats) => [...cats, c]);
+    setNewCategory("");
+  }
+  function removeCategory(c) {
+    if (categories.length <= 1) { showToast("Keep at least one category."); return; }
+    setCategories((cats) => cats.filter((x) => x !== c));
+  }
+
+  return (
+    <div className="space-y-5 max-w-xl">
+      <h2 style={{ fontSize: 24, fontWeight: 600, color: T.onSurface }}>Profile & settings</h2>
+      <Card>
+        <p className="mb-3" style={{ fontWeight: 600, color: T.onSurface }}>Your name</p>
+        <div className="flex gap-2">
+          <input className="pd-input" value={name} onChange={(e) => setName(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter") saveName(); }} />
+          <SecondaryButton onClick={saveName}>Save</SecondaryButton>
+        </div>
+      </Card>
+      <Card>
+        <div className="flex items-center justify-between">
+          <div>
+            <p style={{ fontWeight: 600, color: T.onSurface }}>Notifications</p>
+            <p style={{ fontSize: 12, color: T.onSurfaceVariant }}>Reminders for upcoming and missed tasks</p>
+          </div>
+          <button onClick={() => setProfile((p) => ({ ...p, notifications: !p.notifications }))} aria-pressed={profile.notifications}
+            className="w-12 h-7 rounded-full relative transition-colors flex-shrink-0" style={{ background: profile.notifications ? T.primary : T.surfaceContainer }}>
+            <span className="absolute top-0.5 w-6 h-6 rounded-full bg-white transition-all" style={{ left: profile.notifications ? 22 : 2, boxShadow: "0 2px 6px rgba(0,0,0,0.2)" }} />
+          </button>
+        </div>
+      </Card>
+      <Card>
+        <p className="mb-3" style={{ fontWeight: 600, color: T.onSurface }}>Categories</p>
+        <div className="flex flex-wrap gap-2 mb-3">
+          {categories.map((c) => (
+            <span key={c} className="inline-flex items-center gap-1.5 rounded-full pl-3 pr-2 py-1" style={{ background: T.surfaceContainerLow, fontSize: 12, fontWeight: 500, color: T.onSurface }}>
+              {c}
+              <button onClick={() => removeCategory(c)} aria-label={`Remove ${c}`} style={{ color: T.onSurfaceVariant }}><X size={12} /></button>
+            </span>
+          ))}
+        </div>
+        <div className="flex gap-2">
+          <input className="pd-input" placeholder="New category" value={newCategory} onChange={(e) => setNewCategory(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter") addCategory(); }} />
+          <SecondaryButton onClick={addCategory}>Add</SecondaryButton>
+        </div>
+      </Card>
+      <Card>
+        <p className="mb-1" style={{ fontWeight: 600, color: T.onSurface }}>Reset data</p>
+        <p className="mb-3" style={{ fontSize: 12, color: T.onSurfaceVariant }}>Clears all tasks and habits from this planner. This can't be undone.</p>
+        <button onClick={onResetData} className="rounded-xl px-5 py-3 font-medium text-sm" style={{ background: T.errorContainer, color: T.onErrorContainer }}>Clear all data</button>
+      </Card>
+    </div>
+  );
+}
+
+/* ----------------------------------- nav ----------------------------------- */
+
+function TopNav({ tab, setTab }) {
+  return (
+    <div className="hidden md:flex items-center gap-1 rounded-2xl p-1.5" style={{ background: T.surface, boxShadow: "0px 6px 20px rgba(0,0,0,0.05)" }}>
+      {NAV_ITEMS.map(({ id, label, icon: Icon }) => (
+        <button key={id} onClick={() => setTab(id)} className="flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-medium transition-colors"
+          style={{ background: tab === id ? GRADIENT : "transparent", color: tab === id ? "#fff" : T.onSurfaceVariant }}>
+          <Icon size={16} /> {label}
+        </button>
+      ))}
+    </div>
+  );
+}
+
+function Header({ tab, setTab, onQuickAdd }) {
+  return (
+    <div className="sticky top-0 z-30" style={{ background: `${T.background}f2`, backdropFilter: "blur(6px)" }}>
+      <div className="max-w-[1200px] mx-auto px-5 md:px-8 pt-6 pb-3 flex items-center justify-between gap-3">
+        <div className="flex items-center gap-2 flex-shrink-0">
+          <span className="w-8 h-8 rounded-xl flex items-center justify-center" style={{ background: GRADIENT }}><Sparkles size={16} color="#fff" /></span>
+          <span style={{ fontSize: 18, fontWeight: 700, color: T.onSurface }}>PlanDay</span>
+        </div>
+        <TopNav tab={tab} setTab={setTab} />
+        <SecondaryButton onClick={onQuickAdd} className="hidden md:inline-flex flex-shrink-0"><Plus size={15} /> Quick add</SecondaryButton>
+      </div>
+      <div className="md:hidden max-w-[1200px] mx-auto px-5 pb-3 flex gap-2 overflow-x-auto">
+        {NAV_ITEMS.map(({ id, label, icon: Icon }) => (
+          <button key={id} onClick={() => setTab(id)} className="flex items-center gap-1.5 rounded-full px-3.5 py-2 text-xs font-semibold flex-shrink-0 transition-colors"
+            style={{ background: tab === id ? GRADIENT : T.surface, color: tab === id ? "#fff" : T.onSurfaceVariant, boxShadow: tab === id ? "none" : "0 4px 12px rgba(0,0,0,0.04)" }}>
+            <Icon size={13} /> {label}
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function FAB({ onClick }) {
+  return (
+    <button onClick={onClick} aria-label="Quick add task" className="fixed bottom-6 right-6 z-40 w-14 h-14 rounded-full flex items-center justify-center md:hidden"
+      style={{ background: GRADIENT, boxShadow: `0 10px 30px ${T.primary}66` }}>
+      <Plus size={24} color="#fff" />
+    </button>
+  );
+}
+
+/* ----------------------------------- app ----------------------------------- */
+
+export default function App() {
+  const [loaded, setLoaded] = useState(false);
+  const [tasks, setTasks] = useState([]);
+  const [habits, setHabits] = useState([]);
+  const [completions, setCompletions] = useState({});
+  const [profile, setProfile] = useState({ name: "Ayesha", notifications: true });
+  const [categories, setCategories] = useState(CATEGORIES_DEFAULT);
+  const [tab, setTab] = useState("dashboard");
+  const [selectedDate, setSelectedDate] = useState(todayStr());
+  const [calendarMonth, setCalendarMonth] = useState(new Date());
+  const [showTaskModal, setShowTaskModal] = useState(false);
+  const [editingTask, setEditingTask] = useState(null);
+  const [showHabitModal, setShowHabitModal] = useState(false);
+  const [toastMsg, setToastMsg] = useState("");
+  const toastTimer = useRef(null);
+
+  function showToast(msg) {
+    setToastMsg(msg);
+    clearTimeout(toastTimer.current);
+    toastTimer.current = setTimeout(() => setToastMsg(""), 2200);
+  }
+
+  useEffect(() => {
+    const link = document.createElement("link");
+    link.rel = "stylesheet";
+    link.href = "https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap";
+    document.head.appendChild(link);
+    (async () => {
+      const [t, h, c, p, cat] = await Promise.all([
+        loadKey("pd_tasks", null),
+        loadKey("pd_habits", null),
+        loadKey("pd_completions", {}),
+        loadKey("pd_profile", { name: "Ayesha", notifications: true }),
+        loadKey("pd_categories", CATEGORIES_DEFAULT),
+      ]);
+      setTasks(t !== null ? t : seedTasks());
+      setHabits(h !== null ? h : seedHabits());
+      setCompletions(c || {});
+      setProfile(p || { name: "Ayesha", notifications: true });
+      setCategories(cat && cat.length ? cat : CATEGORIES_DEFAULT);
+      setLoaded(true);
+    })();
+    return () => { try { document.head.removeChild(link); } catch (e) {} };
+  }, []);
+
+  useEffect(() => { if (loaded) saveKey("pd_tasks", tasks); }, [tasks, loaded]);
+  useEffect(() => { if (loaded) saveKey("pd_habits", habits); }, [habits, loaded]);
+  useEffect(() => { if (loaded) saveKey("pd_completions", completions); }, [completions, loaded]);
+  useEffect(() => { if (loaded) saveKey("pd_profile", profile); }, [profile, loaded]);
+  useEffect(() => { if (loaded) saveKey("pd_categories", categories); }, [categories, loaded]);
+
+  function openAddTask(dateOverride) { setEditingTask(dateOverride ? { date: dateOverride } : null); setShowTaskModal(true); }
+  function openEditTask(task) { setEditingTask(task); setShowTaskModal(true); }
+  function saveTask(task) {
+    const wasEdit = !!(editingTask && editingTask.id);
+    setTasks((prev) => (prev.some((t) => t.id === task.id) ? prev.map((t) => (t.id === task.id ? task : t)) : [...prev, task]));
+    setShowTaskModal(false);
+    setEditingTask(null);
+    showToast(wasEdit ? "Task updated." : "Task added.");
+  }
+  function toggleTask(id) { setTasks((prev) => prev.map((t) => (t.id === id ? { ...t, completed: !t.completed } : t))); }
+  function deleteTask(id) { setTasks((prev) => prev.filter((t) => t.id !== id)); showToast("Task deleted."); }
+  function saveHabit(habit) { setHabits((prev) => [...prev, habit]); setShowHabitModal(false); showToast("Habit added."); }
+  function deleteHabit(id) {
+    setHabits((prev) => prev.filter((h) => h.id !== id));
+    setCompletions((prev) => { const next = { ...prev }; Object.keys(next).forEach((k) => { if (k.startsWith(`${id}|`)) delete next[k]; }); return next; });
+    showToast("Habit deleted.");
+  }
+  function toggleHabitDay(habitId, dateStr) {
+    setCompletions((prev) => { const key = `${habitId}|${dateStr}`; const next = { ...prev }; if (next[key]) delete next[key]; else next[key] = true; return next; });
+  }
+  function resetData() {
+    if (!window.confirm("Clear all tasks and habits? This can't be undone.")) return;
+    setTasks([]); setHabits([]); setCompletions({});
+    showToast("All data cleared.");
+  }
+
+  if (!loaded) {
+    return (
+      <div className="min-h-screen flex items-center justify-center" style={{ background: T.background, fontFamily: "Inter, sans-serif" }}>
+        <div className="flex flex-col items-center gap-3">
+          <span className="w-10 h-10 rounded-full animate-spin" style={{ border: `3px solid ${T.surfaceContainer}`, borderTopColor: T.primary }} />
+          <span style={{ fontSize: 13, color: T.onSurfaceVariant }}>Loading PlanDay…</span>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div style={{ fontFamily: "Inter, sans-serif", background: T.background, minHeight: "100vh", color: T.onSurface }}>
+      <style>{`
+        .pd-input { width:100%; background:#f0f0f0; border:2px solid transparent; border-radius:12px; padding:10px 12px; font-size:14px; color:#1a1c1c; outline:none; font-family:inherit; transition:background .15s, border-color .15s; }
+        .pd-input:focus { background:#ffffff; border-color:${T.tertiary}; }
+      `}</style>
+      <Header tab={tab} setTab={setTab} onQuickAdd={() => openAddTask()} />
+      <main className="max-w-[1200px] mx-auto px-5 md:px-8 pb-28 md:pb-16">
+        {tab === "dashboard" && (
+          <Dashboard tasks={tasks} habits={habits} completions={completions} profile={profile}
+            onToggleTask={toggleTask} onEditTask={openEditTask} onDeleteTask={deleteTask}
+            onOpenAddTask={() => openAddTask()} onOpenAddHabit={() => setShowHabitModal(true)} />
+        )}
+        {tab === "planner" && (
+          <Planner tasks={tasks} selectedDate={selectedDate} setSelectedDate={setSelectedDate}
+            onToggleTask={toggleTask} onEditTask={openEditTask} onDeleteTask={deleteTask}
+            onOpenAddTask={() => openAddTask(selectedDate)} />
+        )}
+        {tab === "calendar" && (
+          <CalendarView tasks={tasks} calendarMonth={calendarMonth} setCalendarMonth={setCalendarMonth}
+            selectedDate={selectedDate} setSelectedDate={setSelectedDate}
+            onToggleTask={toggleTask} onEditTask={openEditTask} onDeleteTask={deleteTask}
+            onOpenAddTask={() => openAddTask(selectedDate)} />
+        )}
+        {tab === "habits" && (
+          <HabitsView habits={habits} completions={completions} onToggleDay={toggleHabitDay} onDelete={deleteHabit} onOpenAddHabit={() => setShowHabitModal(true)} />
+        )}
+        {tab === "progress" && <ProgressView tasks={tasks} habits={habits} completions={completions} />}
+        {tab === "profile" && (
+          <ProfileView profile={profile} setProfile={setProfile} categories={categories} setCategories={setCategories} onResetData={resetData} showToast={showToast} />
+        )}
+      </main>
+      <FAB onClick={() => openAddTask()} />
+      {showTaskModal && <TaskModal initial={editingTask} categories={categories} onSave={saveTask} onClose={() => { setShowTaskModal(false); setEditingTask(null); }} />}
+      {showHabitModal && <HabitModal onSave={saveHabit} onClose={() => setShowHabitModal(false)} />}
+      <Toast message={toastMsg} />
+    </div>
+  );
+}
+
+
+const root = ReactDOM.createRoot(document.getElementById("root"));
+root.render(<App />);
+
+</script>
+</body>
+</html>
