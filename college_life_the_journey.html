@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>College Life: The Journey</title>
+<style>
+:root{--bg:#f4f7ff;--card:#fff;--text:#18233a;--muted:#6d7890;--primary:#635bff;--secondary:#8b5cf6;--good:#16a34a;--bad:#dc2626;--gold:#f59e0b;--line:#e6eaf2}
+*{box-sizing:border-box}body{margin:0;font-family:Inter,system-ui,-apple-system,Segoe UI,sans-serif;background:linear-gradient(135deg,#eef2ff,#f8fafc);color:var(--text)}button,select,input{font:inherit}button{border:0;cursor:pointer}.hidden{display:none!important}
+.app{min-height:100vh}.top{background:linear-gradient(135deg,#29235f,#635bff 55%,#8b5cf6);color:#fff;padding:18px 22px;position:sticky;top:0;z-index:20;box-shadow:0 5px 25px #3b2f7c33}.topbar{max-width:1250px;margin:auto;display:flex;justify-content:space-between;align-items:center;gap:15px}.brand{font-size:22px;font-weight:900}.brand small{display:block;font-size:11px;opacity:.7;letter-spacing:1.5px}.stats{display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end}.pill{background:#ffffff1f;border:1px solid #ffffff30;border-radius:12px;padding:7px 10px;font-size:12px}.layout{max-width:1250px;margin:auto;padding:20px;display:grid;grid-template-columns:210px 1fr;gap:18px}.nav{background:var(--card);border:1px solid var(--line);border-radius:20px;padding:12px;height:max-content;position:sticky;top:95px}.nav button{width:100%;padding:11px;text-align:left;background:transparent;border-radius:12px;color:var(--muted);margin:2px 0}.nav button.active,.nav button:hover{background:#eef0ff;color:var(--primary);font-weight:800}.content{min-width:0}.hero{background:linear-gradient(135deg,#fff,#f0efff);border:1px solid var(--line);border-radius:24px;padding:22px;display:flex;justify-content:space-between;gap:15px;align-items:center}.hero h1{margin:0 0 5px;font-size:30px}.hero p{margin:0;color:var(--muted)}.actions{display:flex;gap:8px;flex-wrap:wrap}.primary{background:var(--primary);color:#fff;padding:11px 15px;border-radius:12px;font-weight:800}.secondary{background:#fff;border:1px solid var(--line);color:var(--text);padding:10px 14px;border-radius:12px;font-weight:700}.danger{background:#fee2e2;color:#b91c1c;padding:10px 14px;border-radius:12px}.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-top:16px}.card{background:var(--card);border:1px solid var(--line);border-radius:20px;padding:17px;box-shadow:0 8px 25px #233b7a0a}.card h3{margin:0 0 10px}.metric{font-size:27px;font-weight:900}.muted{color:var(--muted);font-size:13px}.bar{height:8px;background:#edf0f6;border-radius:20px;overflow:hidden;margin-top:8px}.fill{height:100%;background:linear-gradient(90deg,var(--primary),var(--secondary));border-radius:20px;transition:width .4s}.two{display:grid;grid-template-columns:1fr 1fr;gap:15px;margin-top:15px}.three{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}.item{border:1px solid var(--line);border-radius:15px;padding:13px;margin:8px 0;background:#fafbff}.item button{margin-top:8px}.tag{display:inline-block;border-radius:999px;padding:4px 8px;background:#eef0ff;color:#5048d9;font-size:11px;font-weight:800}.good{color:var(--good)}.bad{color:var(--bad)}.gold{color:var(--gold)}.notice{padding:11px 13px;border-radius:12px;background:#fff7ed;border:1px solid #fed7aa;margin-top:12px;font-size:13px}.modal{position:fixed;inset:0;background:#11182799;display:flex;align-items:center;justify-content:center;padding:20px;z-index:50}.modalbox{background:#fff;max-width:560px;width:100%;border-radius:24px;padding:24px;box-shadow:0 25px 70px #0004}.choices{display:grid;gap:9px;margin-top:15px}.choices button{text-align:left;background:#f7f8fc;border:1px solid var(--line);padding:13px;border-radius:13px}.choices button:hover{border-color:var(--primary);background:#f1f0ff}.toast{position:fixed;right:20px;bottom:20px;background:#18233a;color:#fff;padding:13px 17px;border-radius:13px;z-index:100;box-shadow:0 10px 30px #0003}.setup{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px}.setupbox{max-width:800px;width:100%;background:#fff;border-radius:28px;padding:30px;box-shadow:0 25px 80px #3d347d22}.setupgrid{display:grid;grid-template-columns:1fr 1fr;gap:12px}.field label{font-size:12px;font-weight:800;color:var(--muted);display:block;margin-bottom:6px}.field input,.field select{width:100%;padding:12px;border:1px solid var(--line);border-radius:12px;background:#fff}.mode{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin:15px 0}.mode label{border:1px solid var(--line);border-radius:15px;padding:14px;cursor:pointer}.mode input{display:none}.mode label:has(input:checked){border-color:var(--primary);background:#f1f0ff}.end{max-width:750px;margin:40px auto}.ending{font-size:42px;font-weight:950;background:linear-gradient(90deg,#635bff,#ec4899);color:transparent;background-clip:text}.log{max-height:230px;overflow:auto}.small{font-size:12px}.fade{animation:fade .35s}@keyframes fade{from{opacity:.3;transform:translateY(6px)}to{opacity:1;transform:none}}@media(max-width:850px){.layout{grid-template-columns:1fr}.nav{position:static;display:flex;overflow:auto;gap:4px}.nav button{min-width:max-content}.grid{grid-template-columns:1fr 1fr}.two,.three{grid-template-columns:1fr}.topbar{align-items:flex-start;flex-direction:column}.stats{justify-content:flex-start}.hero{flex-direction:column;align-items:flex-start}}@media(max-width:550px){.grid,.setupgrid,.mode{grid-template-columns:1fr}.layout{padding:10px}.hero h1{font-size:24px}}
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script>
+const subjects=["Mathematics","Programming","Artificial Intelligence","Communication","Data Science","Project Management"];
+const careers=[
+["AI Engineer",7.5,70,75,3,"🤖"],["Software Developer",7.0,75,60,3,"💻"],["Data Analyst",7.0,65,65,2,"📊"],
+["UI/UX Designer",6.5,50,45,3,"🎨"],["Digital Marketer",6.0,45,40,2,"📢"],["Researcher",8.0,60,75,4,"🔬"],["Entrepreneur",6.5,60,50,2,"🚀"]
+];
+const npcs=[
+["Maya","Hardworking","📚"],["Arjun","Coding expert","💻"],["Sara","Creative designer","🎨"],["Rahul","Funny & social","😂"],["Priya","Ambitious","🚀"]
+];
+const achievements=[
+["top","🏆","Top Student","Finish with GPA 8.5+"],["study","📚","Study Master","Complete 15 study sessions"],
+["code","💻","Coding Pro","Complete 3 programming projects"],["social","🤝","Social Butterfly","Reach 80 friendship with someone"],
+["money","💰","Money Manager","Finish with ₹10,000+"],["creative","🎨","Creative Genius","Complete a creative project"],
+["fitness","🏃","Fitness Lover","Visit gym 10 times"],["founder","🚀","Future Entrepreneur","Choose Entrepreneur career"],
+["attendance","🎓","Perfect Attendance","Finish with 90%+ attendance"],["intern","💼","Internship Winner","Win an internship event"]
+];
+let S=null, currentPage="home", modal=null, toastTimer=null;
+
+function esc(x){return String(x??"").replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[m]));}
+function clamp(x,a=0,b=100){return Math.max(a,Math.min(b,x));}
+function money(n){return "₹"+Math.max(0,Math.round(n)).toLocaleString("en-IN");}
+function save(){localStorage.setItem("collegeLifeSave",JSON.stringify(S));}
+function load(){try{let x=localStorage.getItem("collegeLifeSave");return x?JSON.parse(x):null}catch(e){return null}}
+function notify(t){clearTimeout(toastTimer);let d=document.createElement("div");d.className="toast";d.textContent=t;document.body.appendChild(d);toastTimer=setTimeout(()=>d.remove(),2600);}
+function change(k,v){S[k]=v;if(["gpa","attendance","happiness","energy","skills","reputation"].includes(k))S[k]=clamp(S[k],0,k==="gpa"?10:100);save();}
+function effect(obj){Object.entries(obj).forEach(([k,v])=>{if(k==="money")S.money+=v;else if(k==="gpa")S.gpa=clamp(S.gpa+v,0,10);else S[k]=clamp((S[k]||0)+v,0,100)});save();}
+function levelFor(n){return Math.floor(n/100)+1}
+function statCard(label,val,max=100,icon=""){return `<div class="card"><div class="muted">${icon} ${label}</div><div class="metric">${val}</div>${max>1?`<div class="bar"><div class="fill" style="width:${clamp(val/max*100)}%"></div></div>`:""}</div>`}
+
+function setup(){
+document.getElementById("root").innerHTML=`<div class="setup"><div class="setupbox">
+<div class="tag">🎮 INTERACTIVE LIFE SIMULATOR</div><h1>COLLEGE LIFE: THE JOURNEY</h1>
+<p class="muted">Start as a first-year student and make choices that shape your academics, friendships, money and career.</p>
+<div class="setupgrid">
+<div class="field"><label>STUDENT NAME</label><input id="name" placeholder="Enter your name"></div>
+<div class="field"><label>GENDER / AVATAR</label><select id="gender"><option>👩 Student</option><option>👨 Student</option><option>🧑 Student</option></select></div>
+<div class="field"><label>COURSE / MAJOR</label><select id="major">${["Computer Science","AI & Data Science","Business","Design","Engineering","Media"].map(x=>`<option>${x}</option>`).join("")}</select></div>
+<div class="field"><label>PERSONALITY</label><select id="personality">${["Hardworking","Social","Creative","Ambitious","Balanced"].map(x=>`<option>${x}</option>`).join("")}</select></div>
+</div><h3>Choose difficulty</h3><div class="mode">
+<label><input type="radio" name="mode" value="easy" checked>🟢 <b>Easy</b><br><span class="small">Relaxed experience</span></label>
+<label><input type="radio" name="mode" value="normal">🟡 <b>Normal</b><br><span class="small">Balanced challenge</span></label>
+<label><input type="radio" name="mode" value="hard">🔴 <b>Hard</b><br><span class="small">Strict & challenging</span></label></div>
+<button class="primary" style="width:100%;font-size:16px" onclick="startGame()">🚀 START MY COLLEGE JOURNEY</button>
+${load()?`<button class="secondary" style="width:100%;margin-top:8px" onclick="continueGame()">↩️ Continue saved game</button>`:""}
+</div></div>`;
+}
+function startGame(){
+let mode=document.querySelector('input[name=mode]:checked').value;
+S={name:document.getElementById("name").value.trim()||"Alex",gender:document.getElementById("gender").value,major:document.getElementById("major").value,personality:document.getElementById("personality").value,mode,
+day:1,semester:1,year:1,gpa:7,attendance:75,happiness:70,energy:80,money:5000,skills:10,reputation:50,
+knowledge:15,communication:15,projects:0,internships:0,certifications:0,studySessions:0,workSessions:0,gym:0,
+friends:npcs.map(n=>({name:n[0],personality:n[1],avatar:n[2],level:0})),achievements:[],completed:[],subjectScores:{},
+monthlySpent:0,career:null,log:["Day 1: Welcome to college!"],ending:null};
+if(mode==="easy"){S.money+=2000;S.energy=90}else if(mode==="hard"){S.money=3500;S.attendance=70;S.gpa=6.8}
+save();render();notify("Welcome to college, "+S.name+"!");}
+function continueGame(){S=load();render();notify("Saved journey loaded.");}
+
+function render(){
+if(!S){setup();return}
+document.getElementById("root").innerHTML=`<div class="app">
+<div class="top"><div class="topbar"><div class="brand">🎓 COLLEGE LIFE <small>THE JOURNEY • ${S.mode.toUpperCase()}</small></div><div class="stats">
+<span class="pill">📅 Day ${S.day}</span><span class="pill">🎓 Sem ${S.semester}/8</span><span class="pill">📚 ${S.gpa.toFixed(2)} GPA</span><span class="pill">⚡ ${Math.round(S.energy)}%</span><span class="pill">💰 ${money(S.money)}</span></div></div></div>
+<div class="layout"><nav class="nav">${nav("home","🏠 Home")} ${nav("classes","📚 Classes")} ${nav("tasks","📝 Tasks")} ${nav("friends","👥 Friends")} ${nav("money","💰 Money")} ${nav("career","💼 Career")} ${nav("goals","🎯 Goals")} ${nav("achievements","🏆 Achievements")} ${nav("settings","⚙️ Settings")}</nav><main class="content fade">${page()}</main></div></div>${modal?`<div class="modal" onclick="if(event.target===this)closeModal()"><div class="modalbox">${modal}</div></div>`:""}`;
+}
+function nav(p,t){return `<button class="${currentPage===p?'active':''}" onclick="currentPage='${p}';render()">${t}</button>`}
+
+function page(){
+if(currentPage==="home")return home();
+if(currentPage==="classes")return classes();
+if(currentPage==="tasks")return tasks();
+if(currentPage==="friends")return friends();
+if(currentPage==="money")return finances();
+if(currentPage==="career")return career();
+if(currentPage==="goals")return goals();
+if(currentPage==="achievements")return ach();
+return settings();
+}
+function home(){
+let semDay=(S.day-1)%14+1, week=Math.ceil(semDay/7);
+return `<div class="hero"><div><div class="tag">YEAR ${S.year} • SEMESTER ${S.semester}</div><h1>Good morning, ${esc(S.name)} 👋</h1><p>${esc(S.major)} • ${esc(S.personality)} • Week ${week}</p></div><div class="actions"><button class="primary" onclick="dailyEvent()">🎲 Random Event</button><button class="secondary" onclick="sleep()">😴 Sleep / End Day</button></div></div>
+<div class="grid">${statCard("GPA",S.gpa.toFixed(2),10,"📚")}${statCard("Attendance",Math.round(S.attendance),100,"🕒")}${statCard("Happiness",Math.round(S.happiness),100,"😊")}${statCard("Energy",Math.round(S.energy),100,"⚡")}${statCard("Skills",Math.round(S.skills),100,"🧠")}${statCard("Reputation",Math.round(S.reputation),100,"⭐")}</div>
+<div class="two"><div class="card"><h3>🗓️ Today's Schedule</h3>${schedule()}</div><div class="card"><h3>📌 Recent Activity</h3><div class="log">${S.log.slice(-7).reverse().map(x=>`<div class="item small">${esc(x)}</div>`).join("")}</div></div></div>
+<div class="card" style="margin-top:15px"><h3>🎯 Career Readiness</h3><div class="three"><div><b>${S.projects}</b><div class="muted">Projects</div></div><div><b>${S.internships}</b><div class="muted">Internships</div></div><div><b>${S.certifications}</b><div class="muted">Certifications</div></div></div></div>`;
+}
+function schedule(){return [["🏫","Classes","attendClass()"],["📖","Study","study()"],["👥","Social","social()"],["💼","Part-time Work","work()"],["🏋️","Gym","gym()"]].map(x=>`<div class="item"><b>${x[0]} ${x[1]}</b><button class="secondary" style="float:right;padding:6px 9px" onclick="${x[2]}">Do</button><div class="muted">Uses energy • choose your priority</div></div>`).join("")}
+function canSpend(n){if(S.energy<n){notify("Not enough energy. Sleep or choose a lighter activity.");return false}S.energy-=n;return true}
+function attendClass(){if(!canSpend(15))return;S.attendance=clamp(S.attendance+1);S.knowledge=clamp(S.knowledge+2);S.log.push("Attended class: +attendance, +knowledge.");save();randomSmallEvent();render();notify("Class attended!");}
+function study(){if(!canSpend(20))return;S.studySessions++;S.knowledge=clamp(S.knowledge+5);S.skills=clamp(S.skills+2);S.gpa=clamp(S.gpa+.04,0,10);S.happiness=clamp(S.happiness-2);S.log.push("Study session completed: +knowledge, +skills.");checkAchievements();save();render();notify("Great study session!");}
+function social(){if(!canSpend(20))return;S.happiness=clamp(S.happiness+7);let f=S.friends[Math.floor(Math.random()*S.friends.length)];f.level=clamp(f.level+8);S.log.push(`Spent time with ${f.name}: friendship +8.`);checkAchievements();save();render();notify(`You had fun with ${f.name}!`);}
+function work(){if(!canSpend(30))return;let pay=S.mode==="easy"?800:S.mode==="hard"?550:650;S.money+=pay;S.workSessions++;S.skills=clamp(S.skills+2);S.happiness=clamp(S.happiness-4);S.log.push(`Part-time job: +${money(pay)}.`);save();render();notify(`Earned ${money(pay)}.`);}
+function gym(){if(!canSpend(15))return;S.gym++;S.happiness=clamp(S.happiness+4);S.skills=clamp(S.skills+1);S.log.push("Gym session completed.");checkAchievements();save();render();notify("Workout complete!");}
+function sleep(){S.day++;S.energy=clamp(S.energy+55);S.happiness=clamp(S.happiness+4);S.attendance=clamp(S.attendance-(S.mode==="hard"?0.4:0));if(S.day%30===0)monthlyReset();if(S.day%14===0)semesterEnd();else {randomDailyEvent();save();render();notify("New day! Energy restored.");}}
+function monthlyReset(){let cost=900+(S.mode==="hard"?400:0);S.money-=cost;S.monthlySpent+=cost;S.log.push(`Monthly expenses: -${money(cost)} for food, transport, books and living.`);if(S.money<0){S.happiness=clamp(S.happiness-10);S.reputation=clamp(S.reputation-3)}}
+function randomSmallEvent(){if(Math.random()<.25)randomDailyEvent()}
+function randomDailyEvent(){
+let events=[
+["📢 Surprise Quiz","A surprise quiz appears after class.",[["Take it seriously",{gpa:.08,knowledge:3}],["Guess quickly",{gpa:-.03,happiness:2}],["Skip it",{gpa:-.08,attendance:-1}]]],
+["🎉 Campus Festival","Your friends want you at the festival.",[["Attend",{happiness:10},],["Volunteer",{happiness:6,reputation:5,skills:2}],["Study instead",{gpa:.08,knowledge:4,happiness:-3}]]],
+["💰 Unexpected Expense","Your laptop needs a small repair.",[["Pay for repair",{money:-600,skills:1}],["Ask a friend",{money:-150,happiness:-2}],["Ignore it",{gpa:-.04,skills:-2}]]],
+["🏆 Competition","A coding competition is happening.",[["Join",{skills:5,reputation:6,money:500}],["Watch",{knowledge:2}],["Skip",{happiness:-1}]]],
+["💼 Internship Opportunity","A company is looking for student interns.",[["Apply",{reputation:4,internships:1,skills:3}],["Prepare first",{skills:5,reputation:2}],["Ignore",{happiness:1}]]]
+];let e=events[Math.floor(Math.random()*events.length)];openChoice(e[0],e[1],e[2]);}
+function dailyEvent(){randomDailyEvent()}
+function openChoice(title,text,choices){
+modal=`<div class="tag">RANDOM EVENT</div><h2>${title}</h2><p>${text}</p><div class="choices">${choices.map((c,i)=>`<button onclick='chooseEvent(${JSON.stringify(c[1])})'>${String.fromCharCode(65+i)}. ${c[0]}</button>`).join("")}</div><button class="secondary" style="margin-top:12px" onclick="closeModal()">Close</button>`;
+render();
+}
+function chooseEvent(e){effect(e);S.log.push("Event choice changed your journey.");closeModal();checkAchievements();save();render();notify("Choice applied — consequences added.");}
+function closeModal(){modal=null;render()}
+
+function classes(){
+return `<div class="hero"><div><div class="tag">ACADEMICS</div><h1>📚 Classes</h1><p>Attendance matters. Build knowledge before exams.</p></div><button class="primary" onclick="attendClass()">🏫 Attend today's class</button></div>
+<div class="grid">${subjects.map((s,i)=>{let sc=S.subjectScores[s]??(55+i*3);return `<div class="card"><span class="tag">${i%2?"CORE":"SUBJECT"}</span><h3>${s}</h3><div class="muted">Difficulty: ${["Easy","Medium","Hard"][i%3]}</div><p>Performance: <b>${Math.round(sc)}%</b></p><div class="bar"><div class="fill" style="width:${sc}%"></div></div><div class="actions" style="margin-top:10px"><button class="secondary" onclick="studySubject('${s}')">📖 Study</button><button class="secondary" onclick="quiz('${s}')">🧠 Quiz</button></div></div>`}).join("")}</div>
+${S.attendance<65?`<div class="notice">⚠️ Warning: Your attendance is below the recommended level. Attend more classes to protect your semester.</div>`:""}`;
+}
+function studySubject(s){if(!canSpend(20))return;S.subjectScores[s]=clamp((S.subjectScores[s]??55)+7);S.knowledge=clamp(S.knowledge+5);S.skills=clamp(S.skills+2);S.studySessions++;save();render();notify(`${s}: performance improved!`)}
+function quiz(s){if(!canSpend(10))return;let q=quizBank[s]||quizBank["Programming"];let item=q[Math.floor(Math.random()*q.length)];modal=`<div class="tag">${s.toUpperCase()} QUIZ</div><h2>${item.q}</h2><div class="choices">${item.a.map((a,i)=>`<button onclick="answerQuiz('${s}',${i},${item.c})">${String.fromCharCode(65+i)}. ${a}</button>`).join("")}</div>`;render();}
+const quizBank={
+"Programming":[{q:"What is the output of print(2 + 3 * 2)?",a:["10","8","7","12"],c:2},{q:"Which keyword defines a function in Python?",a:["func","define","def","function"],c:2}],
+"Artificial Intelligence":[{q:"Which approach learns patterns from data?",a:["Machine Learning","HTML","CSS","Routing"],c:0}],
+"Mathematics":[{q:"What is 12 × 8?",a:["86","96","108","88"],c:1}],
+"Communication":[{q:"Which is best for clear professional communication?",a:["Ambiguity","Clarity","Silence","Jargon"],c:1}],
+"Data Science":[{q:"Which Python library is widely used for dataframes?",a:["Pandas","Turtle","Tkinter","Pygame"],c:0}],
+"Project Management":[{q:"What does a deadline define?",a:["A project color","A completion time","A team name","A password"],c:1}]
+};
+function answerQuiz(s,i,c){if(i===c){S.subjectScores[s]=clamp((S.subjectScores[s]??55)+5);S.knowledge=clamp(S.knowledge+3);S.gpa=clamp(S.gpa+.03);notify("Correct! +knowledge +performance");}else{S.subjectScores[s]=clamp((S.subjectScores[s]??55)-2);notify("Not quite. Review this topic.");}modal=null;save();render();}
+
+function tasks(){
+let assignments=subjects.map((s,i)=>({s,title:["Python Calculator","AI Mini Research","Data Analysis Report","Communication Presentation","Dashboard Project","Agile Plan"][i],deadline:3+i*2}));
+return `<div class="hero"><div><div class="tag">TASK CENTER</div><h1>📝 Assignments & Projects</h1><p>Complete tasks to build your academic record and career portfolio.</p></div><button class="primary" onclick="startProject()">💻 Start a Project</button></div>
+<div class="two"><div class="card"><h3>📚 Assignments</h3>${assignments.map((a,i)=>`<div class="item"><b>${a.title}</b><div class="muted">${a.s} • Deadline: Day ${a.deadline+S.day}</div><div class="actions"><button class="secondary" onclick="assignment('${a.s}','${a.title}','early')">Submit Early</button><button class="secondary" onclick="assignment('${a.s}','${a.title}','on')">Submit</button><button class="danger" onclick="assignment('${a.s}','${a.title}','late')">Late</button></div></div>`).join("")}</div>
+<div class="card"><h3>💻 Project Portfolio</h3>${projectList()}</div></div>`;
+}
+function assignment(s,title,type){let e=type==="early"?{gpa:.12,skills:3,reputation:3}:{gpa:type==="on"?.06:-.08,skills:type==="on"?1:0,reputation:type==="on"?1:-2};S.completed.push(title);effect(e);S.log.push(`${title}: ${type==="early"?"submitted early":type==="on"?"submitted on time":"submitted late"}.`);save();render();notify("Assignment submitted.");}
+function projectList(){return `<p class="muted">Completed projects: <b>${S.projects}</b></p>${S.completed.filter(x=>x.startsWith("PROJECT:")).map(x=>`<div class="item">✅ ${esc(x.replace("PROJECT:",""))}</div>`).join("")||`<div class="item">No completed projects yet. Build one to improve career readiness.</div>`}`}
+function startProject(){
+let ideas=["AI Chatbot","Data Dashboard","Portfolio Website","Mobile App","Machine Learning Model","College Game"];
+modal=`<div class="tag">PROJECT LAB</div><h2>Choose your project</h2><p>Projects have 3 stages: Build → Debug → Present.</p><div class="choices">${ideas.map(x=>`<button onclick="buildProject('${x}')">🚀 ${x}</button>`).join("")}</div>`;
+render();
+}
+function buildProject(name){if(S.energy<25){closeModal();notify("You need at least 25 energy.");return}S.energy-=25;let success=Math.random()<.78+(S.skills/1000);if(success){S.projects++;S.skills=clamp(S.skills+7);S.reputation=clamp(S.reputation+6);S.gpa=clamp(S.gpa+.08);S.completed.push("PROJECT:"+name);S.log.push(`Completed project: ${name}.`);notify("Project completed successfully!")}else{S.skills=clamp(S.skills+2);S.log.push(`${name}: debugging required; partial progress made.`);notify("Project needs more debugging.")}modal=null;checkAchievements();save();render()}
+
+function friends(){
+return `<div class="hero"><div><div class="tag">CAMPUS CONNECTIONS</div><h1>👥 Friends</h1><p>Relationships change through your choices.</p></div><button class="primary" onclick="groupStudy()">👥 Group Study</button></div>
+<div class="grid">${S.friends.map(f=>`<div class="card"><div style="font-size:35px">${f.avatar}</div><h3>${f.name}</h3><span class="tag">${f.personality}</span><p>❤️ Friendship: <b>${f.level}/100</b></p><div class="bar"><div class="fill" style="width:${f.level}%"></div></div><div class="actions" style="margin-top:10px"><button class="secondary" onclick="friendAction('${f.name}','talk')">💬 Talk</button><button class="secondary" onclick="friendAction('${f.name}','lunch')">🍱 Lunch</button><button class="secondary" onclick="friendAction('${f.name}','event')">🎉 Invite</button></div></div>`).join("")}</div>`;
+}
+function friendAction(name,type){let f=S.friends.find(x=>x.name===name);let vals={talk:[5,3],lunch:[8,5],event:[12,7]}[type];if(!canSpend(vals[1]))return;f.level=clamp(f.level+vals[0]);S.happiness=clamp(S.happiness+4);S.log.push(`${type} with ${name}: friendship increased.`);checkAchievements();save();render();notify(`${name} friendship +${vals[0]}`)}
+function groupStudy(){if(!canSpend(20))return;S.friends.forEach(f=>f.level=clamp(f.level+3));S.knowledge=clamp(S.knowledge+6);S.gpa=clamp(S.gpa+.05);S.log.push("Group study: academics and friendships improved.");save();render();notify("Productive group study!");}
+
+function finances(){
+let income=S.workSessions*600;
+return `<div class="hero"><div><div class="tag">LIFE SKILLS</div><h1>💰 Money Management</h1><p>Balance spending today with your future goals.</p></div><button class="primary" onclick="spendRandom()">🛍️ Make a purchase</button></div>
+<div class="grid">${statCard("Current Money",money(S.money),1,"💰")}${statCard("Monthly Spending",money(S.monthlySpent),1,"📉")}${statCard("Work Sessions",S.workSessions,1,"💼")}</div>
+<div class="two"><div class="card"><h3>💼 Ways to Earn</h3><div class="item">Part-time job <button class="secondary" onclick="work()">Work for ${money(S.mode==='hard'?550:S.mode==='easy'?800:650)}</button></div><div class="item">Freelance task <button class="secondary" onclick="freelance()">🧑‍💻 Freelance</button></div><div class="item">Competition prize <button class="secondary" onclick="competition()">🏆 Compete</button></div><div class="item">Scholarship <button class="secondary" onclick="scholarship()">🎓 Apply</button></div></div>
+<div class="card"><h3>🧾 Budget Guide</h3><div class="item">🍔 Food — ₹2,500</div><div class="item">🚌 Transport — ₹800</div><div class="item">📚 Books/software — ₹700</div><div class="item">🎬 Entertainment — ₹500</div><div class="notice">Tip: Keep an emergency reserve before spending on entertainment.</div></div></div>`;
+}
+function spendRandom(){let costs=[200,350,500,750],c=costs[Math.floor(Math.random()*costs.length)];if(S.money<c){notify("You cannot afford this purchase.");return}S.money-=c;S.happiness=clamp(S.happiness+8);S.monthlySpent+=c;S.log.push(`Entertainment/personal purchase: -${money(c)}.`);save();render();notify(`Spent ${money(c)}. Happiness +8.`)}
+function freelance(){if(!canSpend(25))return;let p=500+Math.floor(Math.random()*700);S.money+=p;S.skills=clamp(S.skills+3);S.reputation=clamp(S.reputation+2);save();render();notify(`Freelance income: ${money(p)}`)}
+function competition(){if(!canSpend(20))return;let p=500+Math.floor(Math.random()*1000);S.money+=p;S.reputation=clamp(S.reputation+5);S.skills=clamp(S.skills+4);save();render();notify(`Competition prize: ${money(p)}`)}
+function scholarship(){if(S.gpa<7.5){notify("Most scholarships require at least 7.5 GPA.");return}S.money+=2500;S.reputation=clamp(S.reputation+5);save();render();notify("Scholarship awarded: ₹2,500");}
+
+function career(){
+return `<div class="hero"><div><div class="tag">FUTURE PLANNING</div><h1>💼 Career Center</h1><p>Build projects, skills, internships and reputation before graduation.</p></div><button class="primary" onclick="certify()">📜 Earn Certification</button></div>
+<div class="grid">${careers.map(c=>{let eligible=S.gpa>=c[1]&&S.skills>=c[2]&&S.knowledge>=c[3]&&S.projects>=c[4];return `<div class="card"><div style="font-size:30px">${c[5]}</div><h3>${c[0]}</h3><div class="muted">GPA ${c[1]}+ • Skills ${c[2]}+ • Knowledge ${c[3]}+ • Projects ${c[4]}+</div><p>${eligible?"✅ Eligible":"🔒 Build your profile"}</p><button class="${eligible?'primary':'secondary'}" onclick="chooseCareer('${c[0]}')">${S.career===c[0]?"Selected":"Choose Career"}</button></div>`}).join("")}</div>
+<div class="card" style="margin-top:15px"><h3>📈 Your Career Profile</h3><div class="three"><div><b>${Math.round(S.skills)}</b><div class="muted">Skills</div></div><div><b>${S.projects}</b><div class="muted">Projects</div></div><div><b>${S.certifications}</b><div class="muted">Certifications</div></div></div></div>`;
+}
+function chooseCareer(c){let data=careers.find(x=>x[0]===c);if(S.gpa<data[1]||S.skills<data[2]||S.knowledge<data[3]||S.projects<data[4]){notify("Not eligible yet. Check the requirements.");return}S.career=c;S.reputation=clamp(S.reputation+8);if(c==="Entrepreneur")checkAchievements();save();render();notify(`${c} selected as your career path!`)}
+function certify(){if(S.skills<35){notify("Build at least 35 skills first.");return}S.certifications++;S.skills=clamp(S.skills+4);S.reputation=clamp(S.reputation+3);S.money-=300;save();render();notify("Certification earned!");}
+
+function goals(){
+let goals=[["📚","Reach GPA 8.0",S.gpa,8],["🧠","Reach 60 Skills",S.skills,60],["💻","Complete 3 Projects",S.projects,3],["🤝","Build one friendship to 80",Math.max(...S.friends.map(f=>f.level)),80],["💰","Save ₹10,000",S.money,10000],["💼","Get an Internship",S.internships,1]];
+return `<div class="hero"><div><div class="tag">PERSONAL GROWTH</div><h1>🎯 Goals</h1><p>Small decisions compound into your final college story.</p></div></div><div class="grid">${goals.map(g=>`<div class="card"><h3>${g[0]} ${g[1]}</h3><b>${typeof g[2]==="number"&&g[1].includes("GPA")?g[2].toFixed(2):Math.round(g[2]).toLocaleString("en-IN")} / ${g[3].toLocaleString("en-IN")}</b><div class="bar"><div class="fill" style="width:${clamp(g[2]/g[3]*100)}%"></div></div></div>`).join("")}</div>`;
+}
+function ach(){
+return `<div class="hero"><div><div class="tag">MILESTONES</div><h1>🏆 Achievements</h1><p>${S.achievements.length}/${achievements.length} unlocked</p></div></div><div class="grid">${achievements.map(a=>{let ok=S.achievements.includes(a[0]);return `<div class="card"><div style="font-size:32px">${ok?a[1]:"🔒"}</div><h3>${a[2]}</h3><div class="muted">${a[3]}</div><p class="${ok?'good':''}">${ok?"UNLOCKED":"LOCKED"}</p></div>`}).join("")}</div>`;
+}
+function checkAchievements(){
+let tests={top:S.gpa>=8.5,study:S.studySessions>=15,code:S.projects>=3,social:Math.max(...S.friends.map(f=>f.level))>=80,money:S.money>=10000,creative:S.completed.some(x=>x.includes("Portfolio")||x.includes("Game")||x.includes("Mobile")),fitness:S.gym>=10,founder:S.career==="Entrepreneur",intern:S.internships>=1};
+if(S.semester===8&&S.attendance>=90)tests.attendance=true;
+Object.entries(tests).forEach(([id,ok])=>{if(ok&&!S.achievements.includes(id)){S.achievements.push(id);S.reputation=clamp(S.reputation+5);notify("🏆 Achievement unlocked!");}});
+save();
+}
+function semesterEnd(){
+let bonus=(S.subjectScores?Object.values(S.subjectScores).reduce((a,b)=>a+b,0)/Math.max(1,Object.keys(S.subjectScores).length):60);
+S.gpa=clamp(S.gpa+(bonus-60)/500,0,10);
+S.day++;S.semester++;
+if(S.semester>8){graduate();return}
+S.year=Math.ceil(S.semester/2);S.energy=90;S.happiness=clamp(S.happiness+8);S.log.push(`Semester ${S.semester-1} completed! GPA: ${S.gpa.toFixed(2)}.`);checkAchievements();save();render();notify(`Semester complete! Welcome to Semester ${S.semester}.`);
+}
+function graduate(){
+S.semester=8;S.ending=calculateEnding();checkAchievements();save();
+document.getElementById("root").innerHTML=`<div class="end card"><div class="tag">🎓 GRADUATION DAY</div><h1>CONGRATULATIONS, ${esc(S.name).toUpperCase()}!</h1><div class="ending">${S.ending}</div><p>You completed your college journey as a ${esc(S.major)} student.</p><div class="grid">${statCard("Final GPA",S.gpa.toFixed(2),10,"📚")}${statCard("Attendance",Math.round(S.attendance),100,"🕒")}${statCard("Skills",Math.round(S.skills),100,"🧠")}${statCard("Money",money(S.money),1,"💰")}${statCard("Friendships",Math.max(...S.friends.map(f=>f.level)),100,"❤️")}${statCard("Achievements",S.achievements.length,achievements.length,"🏆")}</div><div class="card" style="margin-top:15px"><h3>💼 Career</h3><p>${S.career||"Undecided"} • Projects: ${S.projects} • Certifications: ${S.certifications}</p><h3>🌟 Major decisions</h3><p>${S.log.slice(-6).map(esc).join(" • ")}</p></div><button class="primary" style="width:100%;margin-top:15px" onclick="localStorage.removeItem('collegeLifeSave');S=null;modal=null;currentPage='home';setup()">🔄 PLAY AGAIN</button></div>`;
+}
+function calculateEnding(){
+if(S.gpa>=8.5&&S.skills>=70)return "🌟 Legendary Student";
+if(S.career==="Entrepreneur"&&S.projects>=4)return "🚀 Startup Founder";
+if(S.career==="UI/UX Designer"&&S.projects>=3)return "🎨 Creative Professional";
+if(S.career&&S.gpa>=7.5)return "💻 Successful Tech Professional";
+if(S.money>=10000)return "💰 Financial Success";
+if(S.happiness>=80&&Math.max(...S.friends.map(f=>f.level))>=70)return "❤️ Balanced Successful Life";
+if(S.gpa<6.5)return "📉 Academic Struggle";
+if(S.energy<25&&S.happiness<35)return "😴 Burnout Ending";
+return "🎓 Academic Star";
+}
+function settings(){
+return `<div class="hero"><div><div class="tag">GAME SETTINGS</div><h1>⚙️ Settings</h1><p>Manage your saved journey.</p></div></div><div class="two"><div class="card"><h3>👤 Student</h3><p><b>${esc(S.name)}</b> • ${esc(S.major)} • ${esc(S.personality)}</p><p class="muted">Mode: ${S.mode}</p><button class="secondary" onclick="exportSave()">📦 Export Save</button></div><div class="card"><h3>⚠️ Reset</h3><p class="muted">This permanently removes your current local save.</p><button class="danger" onclick="resetGame()">Start a new journey</button></div></div>`;
+}
+function exportSave(){navigator.clipboard?.writeText(JSON.stringify(S));notify("Save data copied to clipboard.");}
+function resetGame(){if(confirm("Start a new game? Your current save will be deleted.")){localStorage.removeItem("collegeLifeSave");S=null;currentPage="home";setup();}}
+
+setup();
+</script>
+</body>
+</html>
